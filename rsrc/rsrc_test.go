@@ -1,0 +1,47 @@
+package rsrc
+
+import (
+	"bytes"
+	"fmt"
+	"io"
+	"testing"
+)
+
+type dummyBlob struct {
+	data []byte
+	size int
+}
+
+func newDummyBlob(data []byte) *dummyBlob {
+	return &dummyBlob{
+		data: data,
+		size: len(data),
+	}
+}
+
+func (r *dummyBlob) Read(b []byte) (int, error) {
+	return r.size, io.EOF
+}
+
+func (r *dummyBlob) Size() int64 {
+	return int64(r.size)
+}
+
+func TestBasic(t *testing.T) {
+	data := newDummyBlob([]byte("hello"))
+
+	s := New()
+
+	s.rootDir.addDataEntryByID(1, data)
+	s.rootDir.addSubdirectoryByID(100, 2)
+	s.rootDir.addDataEntryByName("hello", data)
+	s.rootDir.idEntries[1].subdirectory.addSubdirectoryByID(200, 3)
+
+	b := new(bytes.Buffer)
+	n, err := s.WriteTo(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Println(n)
+	fmt.Printf("%q\n", b)
+}
