@@ -102,10 +102,7 @@ func (d *resourceDirectory) walk(cb func(*resourceDirectory) error) error {
 		return nil
 	}
 
-	if err := _walk(d); err != nil {
-		return err
-	}
-	return nil
+	return _walk(d)
 }
 
 func (d *resourceDirectory) entries() []*resourceDirectoryEntry {
