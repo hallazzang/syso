@@ -31,7 +31,7 @@ func (d *resourceDirectory) addDataEntryByName(name string, blob Blob) {
 		name: nameString,
 		dataEntry: &resourceDataEntry{
 			data: &resourceData{
-				blob: blob,
+				Blob: blob,
 			},
 		},
 	})
@@ -43,7 +43,7 @@ func (d *resourceDirectory) addDataEntryByID(id int, blob Blob) {
 		id: &id,
 		dataEntry: &resourceDataEntry{
 			data: &resourceData{
-				blob: blob,
+				Blob: blob,
 			},
 		},
 	})
@@ -169,5 +169,5 @@ type resourceDataEntry struct {
 
 type resourceData struct {
 	offset uint32
-	blob   Blob
+	Blob
 }

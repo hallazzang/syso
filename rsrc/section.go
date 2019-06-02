@@ -26,7 +26,13 @@ func (s *Section) Name() string {
 	return ".rsrc"
 }
 
-func (s *Section) freeze() {
+// Size returns section's size. It traverses the section's tree
+// structure internally when it called.
+func (s *Section) Size() int {
+	return int(s.freeze())
+}
+
+func (s *Section) freeze() uint32 {
 	var offset uint32
 
 	s.rootDir.walk(func(dir *resourceDirectory) error {
@@ -62,10 +68,12 @@ func (s *Section) freeze() {
 	s.rootDir.walk(func(dir *resourceDirectory) error {
 		for _, d := range dir.datas() {
 			d.offset = offset
-			offset += uint32(d.blob.Size())
+			offset += uint32(d.Size())
 		}
 		return nil
 	})
+
+	return offset
 }
 
 // WriteTo writes section data to w.
@@ -136,7 +144,7 @@ func (s *Section) WriteTo(w io.Writer) (int64, error) {
 		for _, e := range dir.dataEntries() {
 			n, err := common.BinaryWriteTo(w, &rawResourceDataEntry{
 				DataRVA: e.data.offset,
-				Size:    uint32(e.data.blob.Size()),
+				Size:    uint32(e.data.Size()),
 			})
 			if err != nil {
 				return err
@@ -150,7 +158,7 @@ func (s *Section) WriteTo(w io.Writer) (int64, error) {
 
 	if err := s.rootDir.walk(func(dir *resourceDirectory) error {
 		for _, d := range dir.datas() {
-			n, err := io.CopyN(w, d.blob, d.blob.Size())
+			n, err := io.CopyN(w, d, d.Size())
 			if err != nil {
 				return err
 			}
