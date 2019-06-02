@@ -6,12 +6,14 @@ import (
 	"io"
 	"unicode/utf16"
 
+	"github.com/hallazzang/syso/coff"
 	"github.com/hallazzang/syso/internal/common"
 )
 
 // Section is a .rsrc section.
 type Section struct {
-	rootDir *resourceDirectory
+	rootDir     *resourceDirectory
+	relocations []coff.Relocation
 }
 
 // New returns newly created .rsrc section.
@@ -32,8 +34,15 @@ func (s *Section) Size() int {
 	return int(s.freeze())
 }
 
+func (s *Section) Relocations() []coff.Relocation {
+	s.freeze()
+	return s.relocations
+}
+
 func (s *Section) freeze() uint32 {
 	var offset uint32
+
+	s.relocations = nil
 
 	s.rootDir.walk(func(dir *resourceDirectory) error {
 		// TODO: instead of calculating size of newly created dummy structure,
@@ -67,6 +76,9 @@ func (s *Section) freeze() uint32 {
 
 	s.rootDir.walk(func(dir *resourceDirectory) error {
 		for _, d := range dir.datas() {
+			s.relocations = append(s.relocations, coff.Relocation{
+				VirtualAddress: offset,
+			})
 			d.offset = offset
 			offset += uint32(d.Size())
 		}
@@ -203,6 +215,7 @@ func (s *Section) addResource(typ int, id *int, name *string, blob Blob) error {
 	}
 
 	subdir.addDataEntryByID(enUSLanguage, blob)
+
 	return nil
 }
 

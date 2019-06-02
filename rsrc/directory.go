@@ -39,6 +39,7 @@ func (d *resourceDirectory) addDataEntryByName(name string, blob Blob) {
 }
 
 func (d *resourceDirectory) addDataEntryByID(id int, blob Blob) {
+	// TODO: check for duplicate id
 	d.idEntries = append(d.idEntries, &resourceDirectoryEntry{
 		id: &id,
 		dataEntry: &resourceDataEntry{
@@ -68,6 +69,7 @@ func (d *resourceDirectory) addSubdirectoryByName(name string, characteristics u
 }
 
 func (d *resourceDirectory) addSubdirectoryByID(id int, characteristics uint32) *resourceDirectory {
+	// TODO: check for duplicate id
 	subdir := &resourceDirectory{
 		characteristics: characteristics,
 	}
