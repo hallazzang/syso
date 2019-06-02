@@ -20,11 +20,12 @@ type directory struct {
 	characteristics uint32
 	nameEntries     []*directoryEntry
 	idEntries       []*directoryEntry
-	names           []string
+	strings         []string
 }
 
 func (d *directory) addDataEntryByName(name string, data common.Blob) {
 	// TODO: check for duplicate name
+	d.strings = append(d.strings, name)
 	d.nameEntries = append(d.nameEntries, &directoryEntry{
 		name: &name,
 		dataEntry: &dataEntry{
@@ -46,6 +47,7 @@ func (d *directory) addDataEntryByID(id int, data common.Blob) {
 
 func (d *directory) addSubdirectoryByName(name string, characteristics uint32) {
 	// TODO: check for duplicate name
+	d.strings = append(d.strings, name)
 	d.nameEntries = append(d.nameEntries, &directoryEntry{
 		name: &name,
 		subdirectory: &directory{
