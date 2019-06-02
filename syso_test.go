@@ -1,10 +1,11 @@
-package rsrc
+package syso
 
 import (
-	"bytes"
-	"fmt"
 	"io"
 	"testing"
+
+	"github.com/hallazzang/syso/coff"
+	"github.com/hallazzang/syso/rsrc"
 )
 
 type dummyBlob struct {
@@ -29,17 +30,15 @@ func (r *dummyBlob) Size() int64 {
 }
 
 func TestBasic(t *testing.T) {
-	data := newDummyBlob([]byte("hello"))
+	c := coff.New()
 
-	s := New()
-	s.AddIconByID(1, data)
-	s.AddIconByName("Icon", data)
-
-	b := new(bytes.Buffer)
-	n, err := s.WriteTo(b)
-	if err != nil {
+	r := rsrc.New()
+	if err := c.AddSection(r); err != nil {
 		t.Fatal(err)
 	}
-	fmt.Println(n)
-	fmt.Printf("%q\n", b)
+
+	b := newDummyBlob([]byte("hello"))
+	if err := r.AddIconByID(1, b); err != nil {
+		t.Fatal(err)
+	}
 }

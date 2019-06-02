@@ -1,7 +1,10 @@
 package rsrc
 
 import (
+	"errors"
 	"sort"
+
+	"github.com/hallazzang/syso/pkg/common"
 )
 
 type rawResourceDirectory struct {
@@ -18,67 +21,70 @@ type resourceDirectory struct {
 	characteristics uint32
 	nameEntries     []*resourceDirectoryEntry
 	idEntries       []*resourceDirectoryEntry
-	strings         []*resourceString
+	strings         map[string]*resourceString
 }
 
-func (d *resourceDirectory) addDataEntryByName(name string, blob Blob) {
-	// TODO: check for duplicate name
-	nameString := &resourceString{
-		string: name,
+func (d *resourceDirectory) addString(s string) *resourceString {
+	str, ok := d.strings[s]
+	if ok {
+		return str
 	}
-	d.strings = append(d.strings, nameString)
-	d.nameEntries = append(d.nameEntries, &resourceDirectoryEntry{
-		name: nameString,
-		dataEntry: &resourceDataEntry{
+	str = &resourceString{
+		string: s,
+	}
+	d.strings[s] = str
+	return str
+}
+
+func (d *resourceDirectory) addData(name *string, id *int, blob common.Blob) (*resourceDataEntry, error) {
+	e, err := d.addDirectoryEntry(name, id, nil, &blob)
+	if err != nil {
+		return nil, err
+	}
+	return e.dataEntry, nil
+}
+
+func (d *resourceDirectory) addSubdirectory(name *string, id *int, characteristics uint32) (*resourceDirectory, error) {
+	e, err := d.addDirectoryEntry(name, id, &characteristics, nil)
+	if err != nil {
+		return nil, err
+	}
+	return e.subdirectory, nil
+}
+
+func (d *resourceDirectory) addDirectoryEntry(name *string, id *int, characteristics *uint32, blob *common.Blob) (*resourceDirectoryEntry, error) {
+	for _, e := range d.entries() {
+		if name != nil {
+			if e.name != nil && e.name.string == *name {
+				return nil, errors.New("duplicate name")
+			}
+		} else {
+			if e.id != nil && *e.id == *id {
+				return nil, errors.New("duplicate id")
+			}
+		}
+	}
+	e := &resourceDirectoryEntry{}
+	if name != nil {
+		e.name = d.addString(*name)
+		d.nameEntries = append(d.nameEntries, e)
+	} else {
+		e.id = id
+		d.idEntries = append(d.idEntries, e)
+	}
+	if characteristics != nil {
+		e.subdirectory = &resourceDirectory{
+			characteristics: *characteristics,
+		}
+	} else {
+		e.dataEntry = &resourceDataEntry{
 			data: &resourceData{
-				Blob: blob,
+				Blob: *blob,
 			},
-		},
-	})
-	d.sort()
-}
-
-func (d *resourceDirectory) addDataEntryByID(id int, blob Blob) {
-	// TODO: check for duplicate id
-	d.idEntries = append(d.idEntries, &resourceDirectoryEntry{
-		id: &id,
-		dataEntry: &resourceDataEntry{
-			data: &resourceData{
-				Blob: blob,
-			},
-		},
-	})
-	d.sort()
-}
-
-func (d *resourceDirectory) addSubdirectoryByName(name string, characteristics uint32) *resourceDirectory {
-	// TODO: check for duplicate name
-	nameString := &resourceString{
-		string: name,
+		}
 	}
-	d.strings = append(d.strings, nameString)
-	subdir := &resourceDirectory{
-		characteristics: characteristics,
-	}
-	d.nameEntries = append(d.nameEntries, &resourceDirectoryEntry{
-		name:         nameString,
-		subdirectory: subdir,
-	})
 	d.sort()
-	return subdir
-}
-
-func (d *resourceDirectory) addSubdirectoryByID(id int, characteristics uint32) *resourceDirectory {
-	// TODO: check for duplicate id
-	subdir := &resourceDirectory{
-		characteristics: characteristics,
-	}
-	d.idEntries = append(d.idEntries, &resourceDirectoryEntry{
-		id:           &id,
-		subdirectory: subdir,
-	})
-	d.sort()
-	return subdir
+	return e, nil
 }
 
 func (d *resourceDirectory) sort() {
@@ -171,5 +177,5 @@ type resourceDataEntry struct {
 
 type resourceData struct {
 	offset uint32
-	Blob
+	common.Blob
 }

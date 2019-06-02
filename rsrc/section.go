@@ -7,7 +7,7 @@ import (
 	"unicode/utf16"
 
 	"github.com/hallazzang/syso/coff"
-	"github.com/hallazzang/syso/internal/common"
+	"github.com/hallazzang/syso/pkg/common"
 )
 
 // Section is a .rsrc section.
@@ -34,9 +34,23 @@ func (s *Section) Size() int {
 	return int(s.freeze())
 }
 
+// Relocations returns relocations needed by this section.
 func (s *Section) Relocations() []coff.Relocation {
 	s.freeze()
 	return s.relocations
+}
+
+// AddIconByID adds an icon resource identified by an integer id
+// to section.
+func (s *Section) AddIconByID(id int, blob common.Blob) error {
+	_, err := s.addResource(iconResource, &id, nil, blob)
+	return err
+}
+
+// AddIconByName adds an icon resource identified by name to section.
+func (s *Section) AddIconByName(name string, blob common.Blob) error {
+	_, err := s.addResource(iconResource, nil, &name, blob)
+	return err
 }
 
 func (s *Section) freeze() uint32 {
@@ -76,8 +90,8 @@ func (s *Section) freeze() uint32 {
 
 	s.rootDir.walk(func(dir *resourceDirectory) error {
 		for _, d := range dir.datas() {
-			s.relocations = append(s.relocations, coff.Relocation{
-				VirtualAddress: offset,
+			s.relocations = append(s.relocations, &relocation{
+				va: offset,
 			})
 			d.offset = offset
 			offset += uint32(d.Size())
@@ -184,48 +198,50 @@ func (s *Section) WriteTo(w io.Writer) (int64, error) {
 	return written, nil
 }
 
-func (s *Section) addResource(typ int, id *int, name *string, blob Blob) error {
+func (s *Section) addResource(typ int, id *int, name *string, blob common.Blob) (*resourceDataEntry, error) {
 	var subdir *resourceDirectory
+	var err error
+
 	for _, e := range s.rootDir.idEntries {
 		if *e.id == typ {
 			if e.subdirectory == nil {
-				return errors.New("subdirectory should exist")
+				return nil, errors.New("subdirectory should exist")
 			}
 			subdir = e.subdirectory
 		}
 	}
 	if subdir == nil {
-		subdir = s.rootDir.addSubdirectoryByID(typ, 0)
+		subdir, err = s.rootDir.addSubdirectory(nil, &typ, 0)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if id != nil {
-		for _, e := range subdir.idEntries {
-			if *e.id == *id {
-				return errors.New("duplicate resource id")
-			}
+		subdir, err = subdir.addSubdirectory(nil, id, 0)
+		if err != nil {
+			return nil, err
 		}
-		subdir = subdir.addSubdirectoryByID(*id, 0)
 	} else {
-		for _, e := range subdir.nameEntries {
-			if e.name.string == *name {
-				return errors.New("duplicate resource name")
-			}
+		subdir, err = subdir.addSubdirectory(name, nil, 0)
+		if err != nil {
+			return nil, err
 		}
-		subdir = subdir.addSubdirectoryByName(*name, 0)
 	}
 
-	subdir.addDataEntryByID(enUSLanguage, blob)
+	lang := enUSLanguage
+	d, err := subdir.addData(nil, &lang, blob)
+	if err != nil {
+		return nil, err
+	}
 
-	return nil
+	return d, nil
 }
 
-// AddIconByID adds an icon resource identified by an integer id
-// to section.
-func (s *Section) AddIconByID(id int, blob Blob) error {
-	return s.addResource(iconResource, &id, nil, blob)
+type relocation struct {
+	va uint32
 }
 
-// AddIconByName adds an icon resource identified by name to section.
-func (s *Section) AddIconByName(name string, blob Blob) error {
-	return s.addResource(iconResource, nil, &name, blob)
+func (r *relocation) VirtualAddress() uint32 {
+	return r.va
 }
