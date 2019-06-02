@@ -1,7 +1,5 @@
 package rsrc
 
-import "github.com/hallazzang/syso/internal/common"
-
 type rawResourceDataEntry struct {
 	DataRVA  uint32
 	Size     uint32
@@ -11,5 +9,5 @@ type rawResourceDataEntry struct {
 
 type resourceDataEntry struct {
 	offset uint32
-	data   common.Blob
+	data   Blob
 }

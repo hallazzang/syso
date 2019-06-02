@@ -2,8 +2,6 @@ package rsrc
 
 import (
 	"sort"
-
-	"github.com/hallazzang/syso/internal/common"
 )
 
 type rawResourceDirectory struct {
@@ -23,7 +21,7 @@ type resourceDirectory struct {
 	strings         []*resourceString
 }
 
-func (d *resourceDirectory) addDataEntryByName(name string, data common.Blob) {
+func (d *resourceDirectory) addDataEntryByName(name string, data Blob) {
 	// TODO: check for duplicate name
 	nameString := &resourceString{
 		string: name,
@@ -38,7 +36,7 @@ func (d *resourceDirectory) addDataEntryByName(name string, data common.Blob) {
 	d.sort()
 }
 
-func (d *resourceDirectory) addDataEntryByID(id int, data common.Blob) {
+func (d *resourceDirectory) addDataEntryByID(id int, data Blob) {
 	d.idEntries = append(d.idEntries, &resourceDirectoryEntry{
 		id: &id,
 		dataEntry: &resourceDataEntry{

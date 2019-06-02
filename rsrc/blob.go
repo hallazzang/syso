@@ -1,4 +1,4 @@
-package common
+package rsrc
 
 import "io"
 
