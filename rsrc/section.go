@@ -2,6 +2,7 @@ package rsrc
 
 import (
 	"encoding/binary"
+	"errors"
 	"io"
 	"unicode/utf16"
 
@@ -163,15 +164,47 @@ func (s *Section) WriteTo(w io.Writer) (int64, error) {
 	return written, nil
 }
 
-// AddIconByID adds an icon resource identified by an integer id
-// to section.
-func (s *Section) AddIconByID(id int, data Blob) error {
-	panic("not implemented")
+func (s *Section) addResource(typ int, id *int, name *string, blob Blob) error {
+	var subdir *resourceDirectory
+	for _, e := range s.rootDir.idEntries {
+		if *e.id == typ {
+			if e.subdirectory == nil {
+				return errors.New("subdirectory should exist")
+			}
+			subdir = e.subdirectory
+		}
+	}
+	if subdir == nil {
+		subdir = s.rootDir.addSubdirectoryByID(typ, 0)
+	}
+
+	if id != nil {
+		for _, e := range subdir.idEntries {
+			if *e.id == *id {
+				return errors.New("duplicate resource id")
+			}
+		}
+		subdir = subdir.addSubdirectoryByID(*id, 0)
+	} else {
+		for _, e := range subdir.nameEntries {
+			if e.name.string == *name {
+				return errors.New("duplicate resource name")
+			}
+		}
+		subdir = subdir.addSubdirectoryByName(*name, 0)
+	}
+
+	subdir.addDataEntryByID(enUSLanguage, blob)
 	return nil
 }
 
+// AddIconByID adds an icon resource identified by an integer id
+// to section.
+func (s *Section) AddIconByID(id int, blob Blob) error {
+	return s.addResource(iconResource, &id, nil, blob)
+}
+
 // AddIconByName adds an icon resource identified by name to section.
-func (s *Section) AddIconByName(name string, data Blob) error {
-	panic("not implemented")
-	return nil
+func (s *Section) AddIconByName(name string, blob Blob) error {
+	return s.addResource(iconResource, nil, &name, blob)
 }
