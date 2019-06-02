@@ -75,6 +75,7 @@ func (d *resourceDirectory) addDirectoryEntry(name *string, id *int, characteris
 	if characteristics != nil {
 		e.subdirectory = &resourceDirectory{
 			characteristics: *characteristics,
+			strings:         make(map[string]*resourceString),
 		}
 	} else {
 		e.dataEntry = &resourceDataEntry{
