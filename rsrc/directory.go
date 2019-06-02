@@ -88,11 +88,9 @@ func (d *resourceDirectory) walk(cb func(*resourceDirectory) error) error {
 		if err := cb(dir); err != nil {
 			return err
 		}
-		for _, e := range dir.entries() {
-			if e.subdirectory != nil {
-				if err := _walk(e.subdirectory); err != nil {
-					return err
-				}
+		for _, subdir := range dir.subdirectories() {
+			if err := _walk(subdir); err != nil {
+				return err
 			}
 		}
 		return nil
@@ -108,7 +106,7 @@ func (d *resourceDirectory) entries() []*resourceDirectoryEntry {
 	return append(append([]*resourceDirectoryEntry{}, d.nameEntries...), d.idEntries...)
 }
 
-func (d *resourceDirectory) datas() []*resourceDataEntry {
+func (d *resourceDirectory) dataEntries() []*resourceDataEntry {
 	var r []*resourceDataEntry
 	for _, e := range d.entries() {
 		if e.dataEntry != nil {
