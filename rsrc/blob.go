@@ -7,7 +7,3 @@ type Blob interface {
 	io.Reader
 	Size() int64
 }
-
-func foo() {
-
-}

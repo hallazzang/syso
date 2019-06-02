@@ -9,5 +9,10 @@ type rawResourceDataEntry struct {
 
 type resourceDataEntry struct {
 	offset uint32
-	data   Blob
+	data   *resourceData
+}
+
+type resourceData struct {
+	offset uint32
+	blob   Blob
 }

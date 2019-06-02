@@ -21,7 +21,7 @@ type resourceDirectory struct {
 	strings         []*resourceString
 }
 
-func (d *resourceDirectory) addDataEntryByName(name string, data Blob) {
+func (d *resourceDirectory) addDataEntryByName(name string, blob Blob) {
 	// TODO: check for duplicate name
 	nameString := &resourceString{
 		string: name,
@@ -30,17 +30,21 @@ func (d *resourceDirectory) addDataEntryByName(name string, data Blob) {
 	d.nameEntries = append(d.nameEntries, &resourceDirectoryEntry{
 		name: nameString,
 		dataEntry: &resourceDataEntry{
-			data: data,
+			data: &resourceData{
+				blob: blob,
+			},
 		},
 	})
 	d.sort()
 }
 
-func (d *resourceDirectory) addDataEntryByID(id int, data Blob) {
+func (d *resourceDirectory) addDataEntryByID(id int, blob Blob) {
 	d.idEntries = append(d.idEntries, &resourceDirectoryEntry{
 		id: &id,
 		dataEntry: &resourceDataEntry{
-			data: data,
+			data: &resourceData{
+				blob: blob,
+			},
 		},
 	})
 	d.sort()
