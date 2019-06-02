@@ -6,7 +6,7 @@ import (
 	"github.com/hallazzang/syso/internal/common"
 )
 
-type resourceDirectory struct {
+type rawResourceDirectory struct {
 	Characteristics     uint32
 	TimeDateStamp       uint32
 	MajorVersion        uint16
@@ -15,59 +15,59 @@ type resourceDirectory struct {
 	NumberOfIDEntries   uint16
 }
 
-type directory struct {
+type resourceDirectory struct {
 	offset          uint32
 	characteristics uint32
-	nameEntries     []*directoryEntry
-	idEntries       []*directoryEntry
+	nameEntries     []*resourceDirectoryEntry
+	idEntries       []*resourceDirectoryEntry
 	strings         []string
 }
 
-func (d *directory) addDataEntryByName(name string, data common.Blob) {
+func (d *resourceDirectory) addDataEntryByName(name string, data common.Blob) {
 	// TODO: check for duplicate name
 	d.strings = append(d.strings, name)
-	d.nameEntries = append(d.nameEntries, &directoryEntry{
+	d.nameEntries = append(d.nameEntries, &resourceDirectoryEntry{
 		name: &name,
-		dataEntry: &dataEntry{
+		dataEntry: &resourceDataEntry{
 			data: data,
 		},
 	})
 	d.sort()
 }
 
-func (d *directory) addDataEntryByID(id int, data common.Blob) {
-	d.idEntries = append(d.idEntries, &directoryEntry{
+func (d *resourceDirectory) addDataEntryByID(id int, data common.Blob) {
+	d.idEntries = append(d.idEntries, &resourceDirectoryEntry{
 		id: &id,
-		dataEntry: &dataEntry{
+		dataEntry: &resourceDataEntry{
 			data: data,
 		},
 	})
 	d.sort()
 }
 
-func (d *directory) addSubdirectoryByName(name string, characteristics uint32) {
+func (d *resourceDirectory) addSubdirectoryByName(name string, characteristics uint32) {
 	// TODO: check for duplicate name
 	d.strings = append(d.strings, name)
-	d.nameEntries = append(d.nameEntries, &directoryEntry{
+	d.nameEntries = append(d.nameEntries, &resourceDirectoryEntry{
 		name: &name,
-		subdirectory: &directory{
+		subdirectory: &resourceDirectory{
 			characteristics: characteristics,
 		},
 	})
 	d.sort()
 }
 
-func (d *directory) addSubdirectoryByID(id int, characteristics uint32) {
-	d.idEntries = append(d.idEntries, &directoryEntry{
+func (d *resourceDirectory) addSubdirectoryByID(id int, characteristics uint32) {
+	d.idEntries = append(d.idEntries, &resourceDirectoryEntry{
 		id: &id,
-		subdirectory: &directory{
+		subdirectory: &resourceDirectory{
 			characteristics: characteristics,
 		},
 	})
 	d.sort()
 }
 
-func (d *directory) sort() {
+func (d *resourceDirectory) sort() {
 	sort.SliceStable(d.nameEntries, func(i, j int) bool {
 		return *d.nameEntries[i].name < *d.nameEntries[j].name
 	})
@@ -76,9 +76,9 @@ func (d *directory) sort() {
 	})
 }
 
-func (d *directory) walk(cb func(*directory) error) error {
-	var _walk func(*directory) error
-	_walk = func(dir *directory) error {
+func (d *resourceDirectory) walk(cb func(*resourceDirectory) error) error {
+	var _walk func(*resourceDirectory) error
+	_walk = func(dir *resourceDirectory) error {
 		if err := cb(dir); err != nil {
 			return err
 		}
@@ -98,24 +98,24 @@ func (d *directory) walk(cb func(*directory) error) error {
 	return nil
 }
 
-func (d *directory) entries() []*directoryEntry {
-	return append(append([]*directoryEntry{}, d.nameEntries...), d.idEntries...)
+func (d *resourceDirectory) entries() []*resourceDirectoryEntry {
+	return append(append([]*resourceDirectoryEntry{}, d.nameEntries...), d.idEntries...)
 }
 
-type resourceDirectoryEntry struct {
+type rawResourceDirectoryEntry struct {
 	NameOffsetOrIntegerID               uint32
 	DataEntryOffsetOrSubdirectoryOffset uint32
 }
 
-type directoryEntry struct {
+type resourceDirectoryEntry struct {
 	offset       uint32
 	name         *string
 	id           *int
-	dataEntry    *dataEntry
-	subdirectory *directory
+	dataEntry    *resourceDataEntry
+	subdirectory *resourceDirectory
 }
 
-type str struct {
+type resourceString struct {
 	offset uint32
 	length uint16
 	s      string
