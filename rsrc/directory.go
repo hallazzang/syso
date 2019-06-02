@@ -80,9 +80,7 @@ func (d *directory) walk(cb func(*directory) error) error {
 		if err := cb(dir); err != nil {
 			return err
 		}
-		entries := append([]*directoryEntry{}, dir.nameEntries...)
-		entries = append(entries, dir.idEntries...)
-		for _, e := range entries {
+		for _, e := range dir.entries() {
 			if e.subdirectory != nil {
 				if err := _walk(e.subdirectory); err != nil {
 					return err
@@ -96,6 +94,10 @@ func (d *directory) walk(cb func(*directory) error) error {
 		return err
 	}
 	return nil
+}
+
+func (d *directory) entries() []*directoryEntry {
+	return append(append([]*directoryEntry{}, d.nameEntries...), d.idEntries...)
 }
 
 type resourceDirectoryEntry struct {
