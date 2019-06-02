@@ -20,14 +20,17 @@ type resourceDirectory struct {
 	characteristics uint32
 	nameEntries     []*resourceDirectoryEntry
 	idEntries       []*resourceDirectoryEntry
-	strings         []string
+	strings         []*resourceString
 }
 
 func (d *resourceDirectory) addDataEntryByName(name string, data common.Blob) {
 	// TODO: check for duplicate name
-	d.strings = append(d.strings, name)
+	nameString := &resourceString{
+		string: name,
+	}
+	d.strings = append(d.strings, nameString)
 	d.nameEntries = append(d.nameEntries, &resourceDirectoryEntry{
-		name: &name,
+		name: nameString,
 		dataEntry: &resourceDataEntry{
 			data: data,
 		},
@@ -47,9 +50,12 @@ func (d *resourceDirectory) addDataEntryByID(id int, data common.Blob) {
 
 func (d *resourceDirectory) addSubdirectoryByName(name string, characteristics uint32) {
 	// TODO: check for duplicate name
-	d.strings = append(d.strings, name)
+	nameString := &resourceString{
+		string: name,
+	}
+	d.strings = append(d.strings, nameString)
 	d.nameEntries = append(d.nameEntries, &resourceDirectoryEntry{
-		name: &name,
+		name: nameString,
 		subdirectory: &resourceDirectory{
 			characteristics: characteristics,
 		},
@@ -69,7 +75,7 @@ func (d *resourceDirectory) addSubdirectoryByID(id int, characteristics uint32) 
 
 func (d *resourceDirectory) sort() {
 	sort.SliceStable(d.nameEntries, func(i, j int) bool {
-		return *d.nameEntries[i].name < *d.nameEntries[j].name
+		return d.nameEntries[i].name.string < d.nameEntries[j].name.string
 	})
 	sort.SliceStable(d.idEntries, func(i, j int) bool {
 		return *d.idEntries[i].id < *d.idEntries[j].id
@@ -109,7 +115,7 @@ type rawResourceDirectoryEntry struct {
 
 type resourceDirectoryEntry struct {
 	offset       uint32
-	name         *string
+	name         *resourceString
 	id           *int
 	dataEntry    *resourceDataEntry
 	subdirectory *resourceDirectory
@@ -117,6 +123,5 @@ type resourceDirectoryEntry struct {
 
 type resourceString struct {
 	offset uint32
-	length uint16
-	s      string
+	string
 }
