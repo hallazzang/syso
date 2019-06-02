@@ -71,6 +71,8 @@ func (s *Section) freeze() {
 func (s *Section) WriteTo(w io.Writer) (int64, error) {
 	var written int64
 
+	s.freeze()
+
 	if err := s.rootDir.walk(func(dir *resourceDirectory) error {
 		n, err := common.BinaryWriteTo(w, &rawResourceDirectory{
 			Characteristics:     dir.characteristics,
