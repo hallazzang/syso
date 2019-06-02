@@ -20,6 +20,7 @@ func newDummyBlob(data []byte) *dummyBlob {
 }
 
 func (r *dummyBlob) Read(b []byte) (int, error) {
+	copy(b[:], r.data[:])
 	return r.size, io.EOF
 }
 
@@ -31,11 +32,8 @@ func TestBasic(t *testing.T) {
 	data := newDummyBlob([]byte("hello"))
 
 	s := New()
-
-	s.rootDir.addDataEntryByID(1, data)
-	s.rootDir.addSubdirectoryByID(100, 2)
-	s.rootDir.addDataEntryByName("hello", data)
-	s.rootDir.idEntries[1].subdirectory.addSubdirectoryByID(200, 3)
+	s.rootDir.addSubdirectoryByName("Hola", 0xb8f).addDataEntryByName("Data", data)
+	s.rootDir.addSubdirectoryByID(2, 0xc04).addDataEntryByID(3, data)
 
 	b := new(bytes.Buffer)
 	n, err := s.WriteTo(b)
