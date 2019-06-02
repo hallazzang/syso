@@ -50,29 +50,33 @@ func (d *resourceDirectory) addDataEntryByID(id int, blob Blob) {
 	d.sort()
 }
 
-func (d *resourceDirectory) addSubdirectoryByName(name string, characteristics uint32) {
+func (d *resourceDirectory) addSubdirectoryByName(name string, characteristics uint32) *resourceDirectory {
 	// TODO: check for duplicate name
 	nameString := &resourceString{
 		string: name,
 	}
 	d.strings = append(d.strings, nameString)
+	subdir := &resourceDirectory{
+		characteristics: characteristics,
+	}
 	d.nameEntries = append(d.nameEntries, &resourceDirectoryEntry{
-		name: nameString,
-		subdirectory: &resourceDirectory{
-			characteristics: characteristics,
-		},
+		name:         nameString,
+		subdirectory: subdir,
 	})
 	d.sort()
+	return subdir
 }
 
-func (d *resourceDirectory) addSubdirectoryByID(id int, characteristics uint32) {
+func (d *resourceDirectory) addSubdirectoryByID(id int, characteristics uint32) *resourceDirectory {
+	subdir := &resourceDirectory{
+		characteristics: characteristics,
+	}
 	d.idEntries = append(d.idEntries, &resourceDirectoryEntry{
-		id: &id,
-		subdirectory: &resourceDirectory{
-			characteristics: characteristics,
-		},
+		id:           &id,
+		subdirectory: subdir,
 	})
 	d.sort()
+	return subdir
 }
 
 func (d *resourceDirectory) sort() {
