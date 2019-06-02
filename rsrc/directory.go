@@ -128,6 +128,14 @@ func (d *resourceDirectory) subdirectories() []*resourceDirectory {
 	return r
 }
 
+func (d *resourceDirectory) datas() []*resourceData {
+	var r []*resourceData
+	for _, e := range d.dataEntries() {
+		r = append(r, e.data)
+	}
+	return r
+}
+
 type rawResourceDirectoryEntry struct {
 	NameOffsetOrIntegerID               uint32
 	DataEntryOffsetOrSubdirectoryOffset uint32
