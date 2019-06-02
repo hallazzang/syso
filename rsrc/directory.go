@@ -108,6 +108,26 @@ func (d *resourceDirectory) entries() []*resourceDirectoryEntry {
 	return append(append([]*resourceDirectoryEntry{}, d.nameEntries...), d.idEntries...)
 }
 
+func (d *resourceDirectory) datas() []*resourceDataEntry {
+	var r []*resourceDataEntry
+	for _, e := range d.entries() {
+		if e.dataEntry != nil {
+			r = append(r, e.dataEntry)
+		}
+	}
+	return r
+}
+
+func (d *resourceDirectory) subdirectories() []*resourceDirectory {
+	var r []*resourceDirectory
+	for _, e := range d.entries() {
+		if e.subdirectory != nil {
+			r = append(r, e.subdirectory)
+		}
+	}
+	return r
+}
+
 type rawResourceDirectoryEntry struct {
 	NameOffsetOrIntegerID               uint32
 	DataEntryOffsetOrSubdirectoryOffset uint32
