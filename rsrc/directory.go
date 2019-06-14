@@ -56,11 +56,11 @@ func (d *resourceDirectory) addDirectoryEntry(name *string, id *int, characteris
 	for _, e := range d.entries() {
 		if name != nil {
 			if e.name != nil && e.name.string == *name {
-				return nil, errors.New("duplicate name")
+				return nil, errors.New("duplicate directory entry name")
 			}
 		} else {
 			if e.id != nil && *e.id == *id {
-				return nil, errors.New("duplicate id")
+				return nil, errors.New("duplicate directory entry id")
 			}
 		}
 	}
