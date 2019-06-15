@@ -83,7 +83,7 @@ func (s *Section) freeze() uint32 {
 	s.rootDir.walk(func(dir *resourceDirectory) error {
 		for _, e := range dir.dataEntries() {
 			e.offset = offset
-			offset += uint32(binary.Size(&resourceDataEntry{}))
+			offset += uint32(binary.Size(&rawResourceDataEntry{}))
 		}
 		return nil
 	})

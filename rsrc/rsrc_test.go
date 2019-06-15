@@ -42,4 +42,5 @@ func TestBasic(t *testing.T) {
 	}
 	fmt.Println(n)
 	fmt.Printf("%q\n", b)
+	fmt.Println(b.Len())
 }

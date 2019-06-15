@@ -1,7 +1,9 @@
 package syso
 
 import (
+	"fmt"
 	"io"
+	"os"
 	"testing"
 
 	"github.com/hallazzang/syso/coff"
@@ -33,12 +35,24 @@ func TestBasic(t *testing.T) {
 	c := coff.New()
 
 	r := rsrc.New()
+	b := newDummyBlob([]byte("helloworld"))
+	if err := r.AddIconByID(1, b); err != nil {
+		t.Fatal(err)
+	}
+
 	if err := c.AddSection(r); err != nil {
 		t.Fatal(err)
 	}
 
-	b := newDummyBlob([]byte("hello"))
-	if err := r.AddIconByID(1, b); err != nil {
+	f, err := os.Create("out.obj")
+	if err != nil {
 		t.Fatal(err)
 	}
+	defer f.Close()
+
+	n, err := c.WriteTo(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Println(n)
 }
