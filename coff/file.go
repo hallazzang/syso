@@ -83,7 +83,7 @@ func (f *File) freeze() {
 		s.offset = offset
 		offset += uint32(len(s.b))
 	}
-	f.stringTableSize = offset - so
+	f.stringTableSize = offset - so + 4
 }
 
 // WriteTo writes COFF file data to w.
