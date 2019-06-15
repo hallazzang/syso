@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 
 	"github.com/hallazzang/syso/pkg/common"
 )
@@ -58,28 +57,21 @@ func (f *File) AddSection(s Section) error {
 }
 
 func (f *File) freeze() {
-	log.Printf("header offset: %08X(%d)", 0, 0)
 	offset := uint32(binary.Size(&rawFileHeader{}))
-	log.Printf("section header offset: %08X(%d)", offset, offset)
 	offset += uint32(binary.Size(&rawSectionHeader{}) * len(f.sections))
 	for _, s := range f.sections {
-		log.Printf("data offset: %08X(%d)", offset, offset)
 		s.dataOffset = offset
 		offset += uint32(s.Size())
 	}
 	for _, s := range f.sections {
-		log.Printf("relocations offset: %08X(%d)", offset, offset)
 		s.relocationsOffset = offset
 		offset += uint32(binary.Size(&rawRelocation{}) * len(s.Relocations()))
 	}
-	log.Printf("symbols offset: %08X(%d)", offset, offset)
 	f.symbolsOffset = offset
 	offset += uint32(binary.Size(&rawSymbol{}) * len(f.sections))
-	log.Printf("string table offset: %08X(%d)", offset, offset)
 	offset += 4  // string table size
 	so := offset // start offset of string table
 	for _, s := range f.strings {
-		log.Printf("string offset: %08X(%d)", offset, offset)
 		s.offset = offset
 		offset += uint32(len(s.b))
 	}
@@ -92,13 +84,6 @@ func (f *File) WriteTo(w io.Writer) (int64, error) {
 
 	f.freeze()
 
-	log.Printf("%08X: file header; %+v", written, &rawFileHeader{
-		Machine:              0x14c, // IMAGE_FILE_MACHINE_I386
-		NumberOfSections:     uint16(len(f.sections)),
-		PointerToSymbolTable: f.symbolsOffset,
-		NumberOfSymbols:      uint32(len(f.sections)),
-		Characteristics:      0x0100, // IMAGE_FILE_32BIT_MACHINE
-	})
 	n, err := common.BinaryWriteTo(w, &rawFileHeader{
 		Machine:              0x14c, // IMAGE_FILE_MACHINE_I386
 		NumberOfSections:     uint16(len(f.sections)),
@@ -118,14 +103,6 @@ func (f *File) WriteTo(w io.Writer) (int64, error) {
 		} else {
 			copy(name[:], s.Name())
 		}
-		log.Printf("%08X: section header; %+v", written, &rawSectionHeader{
-			Name:                 name,
-			SizeOfRawData:        uint32(s.Size()),
-			PointerToRawData:     s.dataOffset,
-			PointerToRelocations: s.relocationsOffset,
-			NumberOfRelocations:  uint16(len(s.Relocations())),
-			Characteristics:      0x40000040, // IMAGE_SCN_MEM_READ|IMAGE_SCN_CNT_INITIALIZED_DATA
-		})
 		n, err := common.BinaryWriteTo(w, &rawSectionHeader{
 			Name:                 name,
 			SizeOfRawData:        uint32(s.Size()),
@@ -141,9 +118,7 @@ func (f *File) WriteTo(w io.Writer) (int64, error) {
 	}
 
 	for _, s := range f.sections {
-		log.Printf("%08X: section; %d bytes", written, s.Size())
 		n, err := s.WriteTo(w)
-		log.Printf("written: %d", n)
 		if err != nil {
 			return written, err
 		}
@@ -152,7 +127,6 @@ func (f *File) WriteTo(w io.Writer) (int64, error) {
 
 	for i, s := range f.sections {
 		for _, r := range s.Relocations() {
-			log.Printf("%08X: relocation", written)
 			n, err := common.BinaryWriteTo(w, &rawRelocation{
 				VirtualAddress:   r.VirtualAddress(),
 				SymbolTableIndex: uint32(i),
@@ -172,7 +146,6 @@ func (f *File) WriteTo(w io.Writer) (int64, error) {
 		} else {
 			copy(name[:], s.Name())
 		}
-		log.Printf("%08X: symbol", written)
 		n, err := common.BinaryWriteTo(w, &rawSymbol{
 			Name:          name,
 			SectionNumber: uint16(i) + 1,
@@ -184,14 +157,12 @@ func (f *File) WriteTo(w io.Writer) (int64, error) {
 		written += n
 	}
 
-	log.Printf("%08X: string table size; %v", written, f.stringTableSize)
 	n, err = common.BinaryWriteTo(w, f.stringTableSize)
 	if err != nil {
 		return written, err
 	}
 	written += n
 	for _, s := range f.strings {
-		log.Printf("%08X: string; %+v", written, s.b)
 		n, err := common.BinaryWriteTo(w, s.b)
 		if err != nil {
 			return written, err
