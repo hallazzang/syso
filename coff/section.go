@@ -21,6 +21,7 @@ type section struct {
 	Section
 }
 
+// Section is a COFF section.
 type Section interface {
 	Name() string
 	WriteTo(w io.Writer) (int64, error)

@@ -11,6 +11,7 @@ type relocation struct {
 	Relocation
 }
 
+// Relocation is a COFF relocation.
 type Relocation interface {
 	VirtualAddress() uint32
 }

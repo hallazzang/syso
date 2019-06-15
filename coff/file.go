@@ -21,6 +21,7 @@ type rawFileHeader struct {
 	Characteristics      uint16
 }
 
+// File is a COFF file.
 type File struct {
 	sections        []*section
 	symbolsOffset   uint32
@@ -29,12 +30,14 @@ type File struct {
 	stringTableSize uint32
 }
 
+// New returns newly created COFF file.
 func New() *File {
 	return &File{
 		stringTable: make(map[string]*_string),
 	}
 }
 
+// AddSection adds section s to file.
 func (f *File) AddSection(s Section) error {
 	for _, sec := range f.sections {
 		if sec.Name() == s.Name() {
