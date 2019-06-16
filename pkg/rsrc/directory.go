@@ -1,10 +1,10 @@
 package rsrc
 
 import (
-	"errors"
 	"sort"
 
 	"github.com/hallazzang/syso/pkg/common"
+	"github.com/pkg/errors"
 )
 
 type rawResourceDirectory struct {
