@@ -6,7 +6,7 @@ import (
 	"io"
 	"unicode/utf16"
 
-	"github.com/hallazzang/syso/coff"
+	"github.com/hallazzang/syso/pkg/coff"
 	"github.com/hallazzang/syso/pkg/common"
 )
 
