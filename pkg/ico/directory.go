@@ -25,7 +25,7 @@ type GroupDirectory Directory
 // GroupDirectoryEntry represents an icon group directory entry(GRPICONDIRENTRY).
 type GroupDirectoryEntry struct {
 	Width      uint8
-	Height     uint
+	Height     uint8
 	ColorCount uint8
 	Reserved   uint8
 	Planes     uint16
