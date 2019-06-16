@@ -2,12 +2,13 @@ package rsrc
 
 import (
 	"encoding/binary"
-	"errors"
 	"io"
 	"unicode/utf16"
 
 	"github.com/hallazzang/syso/pkg/coff"
 	"github.com/hallazzang/syso/pkg/common"
+	"github.com/hallazzang/syso/pkg/ico"
+	"github.com/pkg/errors"
 )
 
 // Section is a .rsrc section.
@@ -40,17 +41,34 @@ func (s *Section) Relocations() []coff.Relocation {
 	return s.relocations
 }
 
-// AddIconByID adds an icon resource identified by an integer id
+// AddIconsByID adds an icon resource identified by an integer id
 // to section.
-func (s *Section) AddIconByID(id int, blob common.Blob) error {
-	_, err := s.addResource(iconResource, &id, nil, blob)
-	return err
+func (s *Section) AddIconsByID(id int, icons *ico.Group) error {
+	return s.addIcons(&id, nil, icons)
 }
 
-// AddIconByName adds an icon resource identified by name to section.
-func (s *Section) AddIconByName(name string, blob common.Blob) error {
-	_, err := s.addResource(iconResource, nil, &name, blob)
-	return err
+// AddIconsByName adds an icon resource identified by name to section.
+func (s *Section) AddIconsByName(name string, icons *ico.Group) error {
+	return s.addIcons(nil, &name, icons)
+}
+
+func (s *Section) addIcons(id *int, name *string, icons *ico.Group) error {
+	if _, err := s.addResource(iconGroupResource, id, name, icons); err != nil {
+		return errors.Wrap(err, "failed to add icon group resource")
+	}
+	for i, img := range icons.Images {
+		if img.ID == 0 {
+			return errors.Errorf("icon image #%d doesn't have an id; id must be set manually", i)
+		}
+		if id != nil && img.ID == *id {
+			return errors.Errorf("icon group's id cannot be same as image #%d's id(%d)", i, img.ID)
+		}
+		tid := img.ID
+		if _, err := s.addResource(iconResource, &tid, nil, img); err != nil {
+			return errors.Wrapf(err, "failed to add icon resource #%d", i)
+		}
+	}
+	return nil
 }
 
 func (s *Section) freeze() uint32 {
@@ -83,6 +101,9 @@ func (s *Section) freeze() uint32 {
 	s.rootDir.walk(func(dir *resourceDirectory) error {
 		for _, e := range dir.dataEntries() {
 			e.offset = offset
+			s.relocations = append(s.relocations, &relocation{
+				va: offset,
+			})
 			offset += uint32(binary.Size(&rawResourceDataEntry{}))
 		}
 		return nil
@@ -90,9 +111,6 @@ func (s *Section) freeze() uint32 {
 
 	s.rootDir.walk(func(dir *resourceDirectory) error {
 		for _, d := range dir.datas() {
-			s.relocations = append(s.relocations, &relocation{
-				va: offset,
-			})
 			d.offset = offset
 			offset += uint32(d.Size())
 		}
@@ -115,29 +133,29 @@ func (s *Section) WriteTo(w io.Writer) (int64, error) {
 			NumberOfIDEntries:   uint16(len(dir.idEntries)),
 		})
 		if err != nil {
-			return err
+			return errors.Wrap(err, "failed to write resource directory")
 		}
 		written += n
 
-		for _, e := range dir.entries() {
-			var i uint32
+		for i, e := range dir.entries() {
+			var id uint32
 			if e.name != nil {
-				i = e.name.offset
+				id = e.name.offset
 			} else {
-				i = uint32(*e.id)
+				id = uint32(*e.id)
 			}
 			var o uint32
 			if e.dataEntry != nil {
 				o = e.dataEntry.offset
 			} else {
-				o = e.subdirectory.offset
+				o = e.subdirectory.offset | 0x80000000
 			}
 			n, err := common.BinaryWriteTo(w, &rawResourceDirectoryEntry{
-				NameOffsetOrIntegerID:               i,
+				NameOffsetOrIntegerID:               id,
 				DataEntryOffsetOrSubdirectoryOffset: o,
 			})
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "failed to write resource directory entry #%d", i)
 			}
 			written += n
 		}
@@ -148,16 +166,16 @@ func (s *Section) WriteTo(w io.Writer) (int64, error) {
 	}
 
 	if err := s.rootDir.walk(func(dir *resourceDirectory) error {
-		for _, str := range dir.strings {
+		for i, str := range dir.strings {
 			u := utf16.Encode([]rune(str.string))
 			n, err := common.BinaryWriteTo(w, uint16(len(u)))
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "failed to write resource string #%d(%q)'s length(%d)", i, str.string, len(u))
 			}
 			written += n
 			n, err = common.BinaryWriteTo(w, u)
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "failed to write resource string #%d(%q)", i, str.string)
 			}
 			written += n
 		}
@@ -167,13 +185,13 @@ func (s *Section) WriteTo(w io.Writer) (int64, error) {
 	}
 
 	if err := s.rootDir.walk(func(dir *resourceDirectory) error {
-		for _, e := range dir.dataEntries() {
+		for i, e := range dir.dataEntries() {
 			n, err := common.BinaryWriteTo(w, &rawResourceDataEntry{
 				DataRVA: e.data.offset,
 				Size:    uint32(e.data.Size()),
 			})
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "failed to write resource data entry #%d", i)
 			}
 			written += n
 		}
@@ -183,10 +201,10 @@ func (s *Section) WriteTo(w io.Writer) (int64, error) {
 	}
 
 	if err := s.rootDir.walk(func(dir *resourceDirectory) error {
-		for _, d := range dir.datas() {
+		for i, d := range dir.datas() {
 			n, err := io.CopyN(w, d, d.Size())
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "failed to write resource data #%d", i)
 			}
 			written += n
 		}
@@ -213,26 +231,23 @@ func (s *Section) addResource(typ int, id *int, name *string, blob common.Blob) 
 	if subdir == nil {
 		subdir, err = s.rootDir.addSubdirectory(nil, &typ, 0)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "failed to add `id` level resource directory")
 		}
 	}
 
 	if id != nil {
 		subdir, err = subdir.addSubdirectory(nil, id, 0)
-		if err != nil {
-			return nil, err
-		}
 	} else {
 		subdir, err = subdir.addSubdirectory(name, nil, 0)
-		if err != nil {
-			return nil, err
-		}
+	}
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to add `language` level subdirectory")
 	}
 
 	lang := enUSLanguage
 	d, err := subdir.addData(nil, &lang, blob)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to add resource data")
 	}
 
 	return d, nil
