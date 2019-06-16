@@ -1,13 +1,14 @@
 package syso
 
 import (
-	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"testing"
 
-	"github.com/hallazzang/syso/coff"
-	"github.com/hallazzang/syso/rsrc"
+	"github.com/hallazzang/syso/pkg/coff"
+	"github.com/hallazzang/syso/pkg/ico"
+	"github.com/hallazzang/syso/pkg/rsrc"
 )
 
 type dummyBlob struct {
@@ -32,27 +33,38 @@ func (r *dummyBlob) Size() int64 {
 }
 
 func TestBasic(t *testing.T) {
-	c := coff.New()
-
-	r := rsrc.New()
-	b := newDummyBlob([]byte("helloworld"))
-	if err := r.AddIconByID(1, b); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := c.AddSection(r); err != nil {
-		t.Fatal(err)
-	}
-
-	f, err := os.Create("out.obj")
+	f, err := os.Open(filepath.Join("testdata", "icon.ico"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer f.Close()
 
-	n, err := c.WriteTo(f)
+	g, err := ico.DecodeAll(f)
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Println(n)
+
+	for i, img := range g.Images {
+		img.ID = i + 100
+	}
+
+	r := rsrc.New()
+	if err := r.AddIconsByID(1, g); err != nil {
+		t.Fatal(err)
+	}
+
+	c := coff.New()
+	if err := c.AddSection(r); err != nil {
+		t.Fatal(err)
+	}
+
+	of, err := os.Create(filepath.Join("testdata", "syso.syso"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer of.Close()
+
+	if _, err := c.WriteTo(of); err != nil {
+		t.Fatal(err)
+	}
 }
