@@ -1,6 +1,6 @@
 # syso
 
-[![godoc]](https://godoc.org/github.com/hallazzang/gosang)
+[![godoc]](https://godoc.org/github.com/hallazzang/syso)
 [![goreportcard]](https://goreportcard.com/report/github.com/hallazzang/syso)
 
 A tool for generating .syso file(COFF object file) that can be consumed
