@@ -1,14 +1,14 @@
 package ico
 
-// Directory represents an icon directory(ICONDIR).
-type Directory struct {
+// ICONDIR
+type directory struct {
 	Reserved uint16
 	Type     uint16
 	Count    uint16
 }
 
-// DirectoryEntry represents an icon directory entry(ICONDIRENTRY).
-type DirectoryEntry struct {
+// ICONDIRENTRY
+type directoryEntry struct {
 	Width       uint8
 	Height      uint8
 	ColorCount  uint8
@@ -19,11 +19,11 @@ type DirectoryEntry struct {
 	ImageOffset uint32
 }
 
-// GroupDirectory represents an icon group directory(GRPICONDIR).
-type GroupDirectory Directory
+// GRPICONDIR
+type groupDirectory directory
 
-// GroupDirectoryEntry represents an icon group directory entry(GRPICONDIRENTRY).
-type GroupDirectoryEntry struct {
+// GRPICONDIRENTRY
+type groupDirectoryEntry struct {
 	Width      uint8
 	Height     uint8
 	ColorCount uint8
