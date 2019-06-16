@@ -12,13 +12,16 @@ import (
 
 // Image represents a single icon image.
 type Image struct {
-	ID   int // ID must be set manually
-	data []byte
+	ID     int // ID must be set manually
+	data   []byte
+	offset int64 // last read offset; TODO: there should be better way of implementing Read
 }
 
 // Read copies image data to p.
 func (i *Image) Read(p []byte) (int, error) {
-	return copy(p, i.data), nil // TODO: too naive implementation
+	n := copy(p[:], i.data[i.offset:])
+	i.offset += int64(n)
+	return n, nil
 }
 
 // Size returns image's size.
