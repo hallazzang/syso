@@ -115,6 +115,7 @@ func (s *Section) addIcons(id *int, name *string, icons *ico.Group) error {
 	}
 	return nil
 }
+
 func (s *Section) addResource(typ int, id *int, name *string, blob common.Blob) (*resourceDataEntry, error) {
 	var subdir *resourceDirectory
 	var err error
