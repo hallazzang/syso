@@ -59,6 +59,16 @@ func (f *File) AddSection(s Section) error {
 	return nil
 }
 
+// Section finds a section by its name and returns it if found.
+func (f *File) Section(name string) (Section, error) {
+	for _, s := range f.sections {
+		if s.Name() == name {
+			return s.Section, nil
+		}
+	}
+	return nil, errors.New("section not found")
+}
+
 func (f *File) freeze() {
 	offset := uint32(binary.Size(&rawFileHeader{}))
 	offset += uint32(binary.Size(&rawSectionHeader{}) * len(f.sections))
