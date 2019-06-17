@@ -5,49 +5,41 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/hallazzang/syso"
 	"github.com/hallazzang/syso/pkg/coff"
-	"github.com/hallazzang/syso/pkg/ico"
-	"github.com/hallazzang/syso/pkg/rsrc"
 )
 
 var (
-	icoFile string
-	outFile string
+	configFile string
+	outFile    string
 )
 
 func init() {
-	flag.StringVar(&icoFile, "ico", "", ".ico file to embed")
+	flag.StringVar(&configFile, "c", "syso.json", "config file name")
 	flag.StringVar(&outFile, "o", "out.syso", "output file name")
 	flag.Parse()
 }
 
 func main() {
-	if icoFile == "" {
-		fmt.Fprintln(os.Stderr, "icon file is not provided")
+	fcfg, err := os.Open(configFile)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to open config file: %v\n", err)
+		os.Exit(1)
+	}
+	defer fcfg.Close()
+
+	cfg, err := syso.ParseConfig(fcfg)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to parse config: %v\n", err)
 		os.Exit(1)
 	}
 
-	fico, err := os.Open(icoFile)
-	if err != nil {
-		panic(err)
-	}
-	defer fico.Close()
-
-	ig, err := ico.DecodeAll(fico)
-	if err != nil {
-		panic(err)
-	}
-	for i, img := range ig.Images {
-		img.ID = i + 100
-	}
-
 	c := coff.New()
-	r := rsrc.New()
-	if err := r.AddIconsByID(1, ig); err != nil {
-		panic(err)
-	}
-	if err := c.AddSection(r); err != nil {
-		panic(err)
+	for i, icon := range cfg.Icons {
+		if err := syso.EmbedIcon(c, icon); err != nil {
+			fmt.Fprintf(os.Stderr, "failed to embed icon #%d: %v\n", i, err)
+			os.Exit(1)
+		}
 	}
 
 	fout, err := os.Create(outFile)
