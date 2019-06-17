@@ -11,6 +11,12 @@ import (
 	"github.com/hallazzang/syso/pkg/common"
 )
 
+// common errors
+var (
+	ErrSectionExists   = errors.New("section with given name already exists")
+	ErrSectionNotFound = errors.New("section not found")
+)
+
 type rawFileHeader struct {
 	Machine              uint16
 	NumberOfSections     uint16
@@ -41,7 +47,7 @@ func New() *File {
 func (f *File) AddSection(s Section) error {
 	for _, sec := range f.sections {
 		if sec.Name() == s.Name() {
-			return errors.New("duplicate section name")
+			return ErrSectionExists
 		}
 	}
 	f.sections = append(f.sections, &section{
@@ -66,7 +72,7 @@ func (f *File) Section(name string) (Section, error) {
 			return s.Section, nil
 		}
 	}
-	return nil, errors.New("section not found")
+	return nil, ErrSectionNotFound
 }
 
 func (f *File) freeze() {
