@@ -98,6 +98,42 @@ func (s *Section) addIcons(id *int, name *string, icons *ico.Group) error {
 	}
 	return nil
 }
+func (s *Section) addResource(typ int, id *int, name *string, blob common.Blob) (*resourceDataEntry, error) {
+	var subdir *resourceDirectory
+	var err error
+
+	for _, e := range s.rootDir.idEntries {
+		if *e.id == typ {
+			if e.subdirectory == nil {
+				return nil, errors.New("subdirectory should exist")
+			}
+			subdir = e.subdirectory
+		}
+	}
+	if subdir == nil {
+		subdir, err = s.rootDir.addSubdirectory(nil, &typ, 0)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to add `id` level resource directory")
+		}
+	}
+
+	if id != nil {
+		subdir, err = subdir.addSubdirectory(nil, id, 0)
+	} else {
+		subdir, err = subdir.addSubdirectory(name, nil, 0)
+	}
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to add `language` level subdirectory")
+	}
+
+	lang := enUSLanguage
+	d, err := subdir.addData(nil, &lang, blob)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to add resource data")
+	}
+
+	return d, nil
+}
 
 func (s *Section) freeze() uint32 {
 	var offset uint32
@@ -242,43 +278,6 @@ func (s *Section) WriteTo(w io.Writer) (int64, error) {
 	}
 
 	return written, nil
-}
-
-func (s *Section) addResource(typ int, id *int, name *string, blob common.Blob) (*resourceDataEntry, error) {
-	var subdir *resourceDirectory
-	var err error
-
-	for _, e := range s.rootDir.idEntries {
-		if *e.id == typ {
-			if e.subdirectory == nil {
-				return nil, errors.New("subdirectory should exist")
-			}
-			subdir = e.subdirectory
-		}
-	}
-	if subdir == nil {
-		subdir, err = s.rootDir.addSubdirectory(nil, &typ, 0)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to add `id` level resource directory")
-		}
-	}
-
-	if id != nil {
-		subdir, err = subdir.addSubdirectory(nil, id, 0)
-	} else {
-		subdir, err = subdir.addSubdirectory(name, nil, 0)
-	}
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to add `language` level subdirectory")
-	}
-
-	lang := enUSLanguage
-	d, err := subdir.addData(nil, &lang, blob)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to add resource data")
-	}
-
-	return d, nil
 }
 
 type relocation struct {
