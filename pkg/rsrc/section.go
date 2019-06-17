@@ -166,16 +166,16 @@ func (s *Section) WriteTo(w io.Writer) (int64, error) {
 	}
 
 	if err := s.rootDir.walk(func(dir *resourceDirectory) error {
-		for i, str := range dir.strings {
+		for _, str := range dir.strings {
 			u := utf16.Encode([]rune(str.string))
 			n, err := common.BinaryWriteTo(w, uint16(len(u)))
 			if err != nil {
-				return errors.Wrapf(err, "failed to write resource string #%d(%q)'s length(%d)", i, str.string, len(u))
+				return errors.Wrapf(err, "failed to write resource string(%q)'s length(%d)", str.string, len(u))
 			}
 			written += n
 			n, err = common.BinaryWriteTo(w, u)
 			if err != nil {
-				return errors.Wrapf(err, "failed to write resource string #%d(%q)", i, str.string)
+				return errors.Wrapf(err, "failed to write resource string(%q)", str.string)
 			}
 			written += n
 		}
