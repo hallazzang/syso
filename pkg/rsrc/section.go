@@ -69,13 +69,31 @@ func (s *Section) ResourceNameExists(name string) bool {
 	return false
 }
 
-// AddIconsByID adds an icon resource identified by an integer id
-// to section.
+// AddIconByID adds a single icon resource identified by an integer id to section.
+func (s *Section) AddIconByID(id int, icon *ico.Image) error {
+	return s.addIcon(&id, nil, icon)
+}
+
+// AddIconByName adds a single icon resource identified by name to section.
+func (s *Section) AddIconByName(name string, icon *ico.Image) error {
+	return s.addIcon(nil, &name, icon)
+}
+
+func (s *Section) addIcon(id *int, name *string, icon *ico.Image) error {
+	if _, err := s.addResource(iconResource, id, name, icon); err != nil {
+		return errors.Wrap(err, "failed to add icon resource")
+	}
+	return nil
+}
+
+// AddIconsByID adds an icon group resource identified by an integer id to section.
+// Each image in icon group must have a valid resource id when using this method.
 func (s *Section) AddIconsByID(id int, icons *ico.Group) error {
 	return s.addIcons(&id, nil, icons)
 }
 
-// AddIconsByName adds an icon resource identified by name to section.
+// AddIconsByName adds an icon group resource identified by name to section.
+// Each image in icon group must have a valid resource id when using this method.
 func (s *Section) AddIconsByName(name string, icons *ico.Group) error {
 	return s.addIcons(nil, &name, icons)
 }
@@ -91,8 +109,7 @@ func (s *Section) addIcons(id *int, name *string, icons *ico.Group) error {
 		if id != nil && img.ID == *id {
 			return errors.Errorf("icon group's id cannot be same as image #%d's id(%d)", i, img.ID)
 		}
-		tid := img.ID
-		if _, err := s.addResource(iconResource, &tid, nil, img); err != nil {
+		if err := s.AddIconByID(img.ID, img); err != nil {
 			return errors.Wrapf(err, "failed to add icon resource #%d", i)
 		}
 	}
