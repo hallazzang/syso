@@ -50,7 +50,7 @@ func (g *Group) Read(p []byte) (int, error) {
 	written += int(n)
 	for i, e := range g.entries {
 		if g.Images[i].ID == 0 {
-			return written, errors.Errorf("image #%d doesn't have an ID", i)
+			return written, errors.Errorf("image #%d doesn't have an id", i)
 		}
 		n, err := common.BinaryWriteTo(buf, &groupDirectoryEntry{
 			Width:      e.Width,
