@@ -41,6 +41,34 @@ func (s *Section) Relocations() []coff.Relocation {
 	return s.relocations
 }
 
+// ResourceIDExists returns true if a resource with given id exists.
+func (s *Section) ResourceIDExists(id int) bool {
+	for _, e := range s.rootDir.idEntries {
+		if e.subdirectory != nil {
+			for _, e2 := range e.subdirectory.idEntries {
+				if *e2.id == id {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
+// ResourceNameExists returns true if a resource with given name exists.
+func (s *Section) ResourceNameExists(name string) bool {
+	for _, e := range s.rootDir.idEntries {
+		if e.subdirectory != nil {
+			for _, e2 := range e.subdirectory.nameEntries {
+				if e2.name.string == name {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
 // AddIconsByID adds an icon resource identified by an integer id
 // to section.
 func (s *Section) AddIconsByID(id int, icons *ico.Group) error {
