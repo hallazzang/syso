@@ -86,6 +86,23 @@ func (s *Section) addIcon(id *int, name *string, icon *ico.Image) error {
 	return nil
 }
 
+// AddIconGroupByID adds icon group resource identified by an integer id.
+func (s *Section) AddIconGroupByID(id int, icons *ico.Group) error {
+	return s.addIconGroup(&id, nil, icons)
+}
+
+// AddIconGroupByName adds icon group resource identified by name.
+func (s *Section) AddIconGroupByName(name string, icons *ico.Group) error {
+	return s.addIconGroup(nil, &name, icons)
+}
+
+func (s *Section) addIconGroup(id *int, name *string, icons *ico.Group) error {
+	if _, err := s.addResource(iconGroupResource, id, name, icons); err != nil {
+		return errors.Wrap(err, "failed to add icon group resource")
+	}
+	return nil
+}
+
 // AddIconsByID adds an icon group resource identified by an integer id to section.
 // Each image in icon group must have a valid resource id when using this method.
 func (s *Section) AddIconsByID(id int, icons *ico.Group) error {
@@ -99,8 +116,8 @@ func (s *Section) AddIconsByName(name string, icons *ico.Group) error {
 }
 
 func (s *Section) addIcons(id *int, name *string, icons *ico.Group) error {
-	if _, err := s.addResource(iconGroupResource, id, name, icons); err != nil {
-		return errors.Wrap(err, "failed to add icon group resource")
+	if err := s.addIconGroup(id, name, icons); err != nil {
+		return err
 	}
 	for i, img := range icons.Images {
 		if img.ID == 0 {
