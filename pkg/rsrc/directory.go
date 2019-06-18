@@ -37,7 +37,7 @@ func (d *resourceDirectory) addString(s string) *resourceString {
 }
 
 func (d *resourceDirectory) addData(name *string, id *int, blob common.Blob) (*resourceDataEntry, error) {
-	e, err := d.addDirectoryEntry(name, id, nil, &blob)
+	e, err := d.addDirectoryEntry(name, id, nil, blob)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +52,7 @@ func (d *resourceDirectory) addSubdirectory(name *string, id *int, characteristi
 	return e.subdirectory, nil
 }
 
-func (d *resourceDirectory) addDirectoryEntry(name *string, id *int, characteristics *uint32, blob *common.Blob) (*resourceDirectoryEntry, error) {
+func (d *resourceDirectory) addDirectoryEntry(name *string, id *int, characteristics *uint32, blob common.Blob) (*resourceDirectoryEntry, error) {
 	for _, e := range d.entries() {
 		if name != nil {
 			if e.name != nil && e.name.string == *name {
@@ -80,7 +80,7 @@ func (d *resourceDirectory) addDirectoryEntry(name *string, id *int, characteris
 	} else {
 		e.dataEntry = &resourceDataEntry{
 			data: &resourceData{
-				Blob: *blob,
+				Blob: blob,
 			},
 		}
 	}
