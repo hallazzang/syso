@@ -192,7 +192,7 @@ func (s *Section) freeze() uint32 {
 			str.offset = offset
 			// TODO: should we encode string to calculate its utf-16
 			// encoded size? better solution may exist.
-			offset += 2 + uint32(len(utf16.Encode([]rune(str.string))))
+			offset += 2 + uint32(binary.Size(utf16.Encode([]rune(str.string))))
 		}
 		return nil
 	})
@@ -239,7 +239,7 @@ func (s *Section) WriteTo(w io.Writer) (int64, error) {
 		for i, e := range dir.entries() {
 			var id uint32
 			if e.name != nil {
-				id = e.name.offset
+				id = e.name.offset | 0x80000000
 			} else {
 				id = uint32(*e.id)
 			}
