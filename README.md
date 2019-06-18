@@ -5,24 +5,24 @@
 
 **syso** - tool for embedding various resources in go executable
 
-# Features
+## Features
 
 - [x] Embed resources by **fixed** integer id
-- [ ] Embed resources by **fixed** string name(there's a bug)
+- [x] Embed resources by **fixed** string name
 
-# Supported Resources
+## Supported Resources
 
 - [x] Icons
 - [ ] Manifest
 - [ ] Version info
 
-# Install
+## Install
 
 ```
 $ go get -u github.com/hallazzang/syso/...
 ```
 
-# Usage
+## Usage
 
 Write a configuration file in JSON, which tells syso what resources you want to embed.
 Here's an example:
@@ -38,7 +38,7 @@ Here's an example:
 }
 ```
 
-You can specify `name` instead of `id`(*NOT YET IMPLEMENTED*):
+You can specify `name` instead of `id`:
 
 ```json
 ...
@@ -57,6 +57,10 @@ $ syso
 
 This will generate `out.syso` in your current directory.
 You can now `go build` to actually include the resources in your executable.
+
+## License
+
+MIT
 
 [godoc]: https://godoc.org/github.com/hallazzang/syso?status.svg
 [goreportcard]: https://goreportcard.com/badge/github.com/hallazzang/syso
