@@ -13,7 +13,7 @@
 ## Supported Resources
 
 - [x] Icons
-- [ ] Manifest
+- [x] Manifest
 - [ ] Version info
 
 ## Install
@@ -34,7 +34,11 @@ Here's an example:
       "id": 1,
       "path": "icon.ico"
     }
-  ]
+  ],
+  "manifest": {
+    "id": 2,
+    "path": "App.exe.manifest"
+  }
 }
 ```
 
