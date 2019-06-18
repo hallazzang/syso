@@ -2,7 +2,9 @@ package common
 
 import (
 	"io"
-	"os"
+	"io/ioutil"
+
+	"github.com/pkg/errors"
 )
 
 // Blob represents arbitrary data that can be embedded in an object file.
@@ -11,23 +13,27 @@ type Blob interface {
 	Size() int64
 }
 
-// FileBlob wraps os.File and implements Blob interface.
-type FileBlob struct {
-	*os.File
+type dataBlob struct {
+	data   []byte
+	offset int64
 }
 
-// NewFileBlob returns new FileBlob that wraps file f.
-func NewFileBlob(f *os.File) *FileBlob {
-	return &FileBlob{
-		File: f,
-	}
-}
-
-// Size returns file's size.
-func (b *FileBlob) Size() int64 {
-	fs, err := b.File.Stat()
+func NewBlob(r io.Reader) (Blob, error) {
+	b, err := ioutil.ReadAll(r)
 	if err != nil {
-		panic(err)
+		return nil, errors.Wrap(err, "failed to read data")
 	}
-	return fs.Size()
+	return &dataBlob{
+		data: b,
+	}, nil
+}
+
+func (b *dataBlob) Read(p []byte) (int, error) {
+	n := copy(p[:], b.data[b.offset:])
+	b.offset += int64(n)
+	return n, nil
+}
+
+func (b *dataBlob) Size() int64 {
+	return int64(len(b.data))
 }
