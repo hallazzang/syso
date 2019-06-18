@@ -133,6 +133,23 @@ func (s *Section) addIcons(id *int, name *string, icons *ico.Group) error {
 	return nil
 }
 
+// AddManifestByID adds a manifest resource identified by an integer id to section.
+func (s *Section) AddManifestByID(id int, manifest common.Blob) error {
+	return s.addManifest(&id, nil, manifest)
+}
+
+// AddManifestByName adds a manifest resource identified by name to section.
+func (s *Section) AddManifestByName(name string, manifest common.Blob) error {
+	return s.addManifest(nil, &name, manifest)
+}
+
+func (s *Section) addManifest(id *int, name *string, manifest common.Blob) error {
+	if _, err := s.addResource(manifestResource, id, name, manifest); err != nil {
+		return errors.Wrap(err, "failed to add manifest resource")
+	}
+	return nil
+}
+
 func (s *Section) addResource(typ int, id *int, name *string, blob common.Blob) (*resourceDataEntry, error) {
 	var subdir *resourceDirectory
 	var err error
