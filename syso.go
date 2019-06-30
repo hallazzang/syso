@@ -65,7 +65,7 @@ func ParseConfig(r io.Reader) (*Config, error) {
 	return &c, nil
 }
 
-// EmbedIcon embeds icon into c.
+// EmbedIcon embeds an icon into c.
 func EmbedIcon(c *coff.File, icon *FileResource) error {
 	if err := icon.Validate(); err != nil {
 		return errors.Wrap(err, "invalid icon")
@@ -85,14 +85,14 @@ func EmbedIcon(c *coff.File, icon *FileResource) error {
 	}
 	for i, img := range icons.Images {
 		img.ID = findPossibleID(r, 1000)
-		if err := r.AddIconByID(img.ID, img); err != nil {
+		if err := r.AddResourceByID(rsrc.IconResource, img.ID, img); err != nil {
 			return errors.Wrapf(err, "failed to add icon image #%d", i)
 		}
 	}
 	if icon.ID != 0 {
-		err = r.AddIconGroupByID(icon.ID, icons)
+		err = r.AddResourceByID(rsrc.IconGroupResource, icon.ID, icons)
 	} else {
-		err = r.AddIconGroupByName(icon.Name, icons)
+		err = r.AddResourceByName(rsrc.IconGroupResource, icon.Name, icons)
 	}
 	if err != nil {
 		return errors.Wrap(err, "failed to add icon group resource")
@@ -100,6 +100,7 @@ func EmbedIcon(c *coff.File, icon *FileResource) error {
 	return nil
 }
 
+// EmbedManifest embeds a manifest into c.
 func EmbedManifest(c *coff.File, manifest *FileResource) error {
 	if err := manifest.Validate(); err != nil {
 		return errors.Wrap(err, "invalid manifest")
@@ -118,9 +119,9 @@ func EmbedManifest(c *coff.File, manifest *FileResource) error {
 		return err
 	}
 	if manifest.ID != 0 {
-		err = r.AddManifestByID(manifest.ID, b)
+		err = r.AddResourceByID(rsrc.ManifestResource, manifest.ID, b)
 	} else {
-		err = r.AddManifestByName(manifest.Name, b)
+		err = r.AddResourceByName(rsrc.ManifestResource, manifest.Name, b)
 	}
 	if err != nil {
 		return errors.Wrap(err, "failed to add manifest resource")

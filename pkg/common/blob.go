@@ -18,6 +18,7 @@ type dataBlob struct {
 	offset int64
 }
 
+// NewBlob creates a blob from r by reading all data from it.
 func NewBlob(r io.Reader) (Blob, error) {
 	b, err := ioutil.ReadAll(r)
 	if err != nil {
