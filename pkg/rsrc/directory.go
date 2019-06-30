@@ -7,7 +7,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-type rawResourceDirectory struct {
+type rawDirectory struct {
 	Characteristics     uint32
 	TimeDateStamp       uint32
 	MajorVersion        uint16
@@ -16,27 +16,27 @@ type rawResourceDirectory struct {
 	NumberOfIDEntries   uint16
 }
 
-type resourceDirectory struct {
+type Directory struct {
 	offset          uint32
 	characteristics uint32
-	nameEntries     []*resourceDirectoryEntry
-	idEntries       []*resourceDirectoryEntry
-	strings         map[string]*resourceString
+	nameEntries     []*DirectoryEntry
+	idEntries       []*DirectoryEntry
+	strings         map[string]*String
 }
 
-func (d *resourceDirectory) addString(s string) *resourceString {
+func (d *Directory) addString(s string) *String {
 	str, ok := d.strings[s]
 	if ok {
 		return str
 	}
-	str = &resourceString{
+	str = &String{
 		string: s,
 	}
 	d.strings[s] = str
 	return str
 }
 
-func (d *resourceDirectory) addData(name *string, id *int, blob common.Blob) (*resourceDataEntry, error) {
+func (d *Directory) addData(name *string, id *int, blob common.Blob) (*DataEntry, error) {
 	e, err := d.addDirectoryEntry(name, id, nil, blob)
 	if err != nil {
 		return nil, err
@@ -44,7 +44,7 @@ func (d *resourceDirectory) addData(name *string, id *int, blob common.Blob) (*r
 	return e.dataEntry, nil
 }
 
-func (d *resourceDirectory) addSubdirectory(name *string, id *int, characteristics uint32) (*resourceDirectory, error) {
+func (d *Directory) addSubdirectory(name *string, id *int, characteristics uint32) (*Directory, error) {
 	e, err := d.addDirectoryEntry(name, id, &characteristics, nil)
 	if err != nil {
 		return nil, err
@@ -52,7 +52,7 @@ func (d *resourceDirectory) addSubdirectory(name *string, id *int, characteristi
 	return e.subdirectory, nil
 }
 
-func (d *resourceDirectory) addDirectoryEntry(name *string, id *int, characteristics *uint32, blob common.Blob) (*resourceDirectoryEntry, error) {
+func (d *Directory) addDirectoryEntry(name *string, id *int, characteristics *uint32, blob common.Blob) (*DirectoryEntry, error) {
 	for _, e := range d.entries() {
 		if name != nil {
 			if e.name != nil && e.name.string == *name {
@@ -64,7 +64,7 @@ func (d *resourceDirectory) addDirectoryEntry(name *string, id *int, characteris
 			}
 		}
 	}
-	e := &resourceDirectoryEntry{}
+	e := &DirectoryEntry{}
 	if name != nil {
 		e.name = d.addString(*name)
 		d.nameEntries = append(d.nameEntries, e)
@@ -73,13 +73,13 @@ func (d *resourceDirectory) addDirectoryEntry(name *string, id *int, characteris
 		d.idEntries = append(d.idEntries, e)
 	}
 	if characteristics != nil {
-		e.subdirectory = &resourceDirectory{
+		e.subdirectory = &Directory{
 			characteristics: *characteristics,
-			strings:         make(map[string]*resourceString),
+			strings:         make(map[string]*String),
 		}
 	} else {
-		e.dataEntry = &resourceDataEntry{
-			data: &resourceData{
+		e.dataEntry = &DataEntry{
+			data: &Data{
 				Blob: blob,
 			},
 		}
@@ -88,7 +88,7 @@ func (d *resourceDirectory) addDirectoryEntry(name *string, id *int, characteris
 	return e, nil
 }
 
-func (d *resourceDirectory) sort() {
+func (d *Directory) sort() {
 	sort.SliceStable(d.nameEntries, func(i, j int) bool {
 		return d.nameEntries[i].name.string < d.nameEntries[j].name.string
 	})
@@ -97,9 +97,9 @@ func (d *resourceDirectory) sort() {
 	})
 }
 
-func (d *resourceDirectory) walk(cb func(*resourceDirectory) error) error {
-	var _walk func(*resourceDirectory) error
-	_walk = func(dir *resourceDirectory) error {
+func (d *Directory) walk(cb func(*Directory) error) error {
+	var _walk func(*Directory) error
+	_walk = func(dir *Directory) error {
 		if err := cb(dir); err != nil {
 			return err
 		}
@@ -114,12 +114,12 @@ func (d *resourceDirectory) walk(cb func(*resourceDirectory) error) error {
 	return _walk(d)
 }
 
-func (d *resourceDirectory) entries() []*resourceDirectoryEntry {
-	return append(append([]*resourceDirectoryEntry{}, d.nameEntries...), d.idEntries...)
+func (d *Directory) entries() []*DirectoryEntry {
+	return append(append([]*DirectoryEntry{}, d.nameEntries...), d.idEntries...)
 }
 
-func (d *resourceDirectory) dataEntries() []*resourceDataEntry {
-	var r []*resourceDataEntry
+func (d *Directory) dataEntries() []*DataEntry {
+	var r []*DataEntry
 	for _, e := range d.entries() {
 		if e.dataEntry != nil {
 			r = append(r, e.dataEntry)
@@ -128,8 +128,8 @@ func (d *resourceDirectory) dataEntries() []*resourceDataEntry {
 	return r
 }
 
-func (d *resourceDirectory) subdirectories() []*resourceDirectory {
-	var r []*resourceDirectory
+func (d *Directory) subdirectories() []*Directory {
+	var r []*Directory
 	for _, e := range d.entries() {
 		if e.subdirectory != nil {
 			r = append(r, e.subdirectory)
@@ -138,45 +138,28 @@ func (d *resourceDirectory) subdirectories() []*resourceDirectory {
 	return r
 }
 
-func (d *resourceDirectory) datas() []*resourceData {
-	var r []*resourceData
+func (d *Directory) datas() []*Data {
+	var r []*Data
 	for _, e := range d.dataEntries() {
 		r = append(r, e.data)
 	}
 	return r
 }
 
-type rawResourceDirectoryEntry struct {
+type rawDirectoryEntry struct {
 	NameOffsetOrIntegerID               uint32
 	DataEntryOffsetOrSubdirectoryOffset uint32
 }
 
-type resourceDirectoryEntry struct {
+type DirectoryEntry struct {
 	offset       uint32
-	name         *resourceString
+	name         *String
 	id           *int
-	dataEntry    *resourceDataEntry
-	subdirectory *resourceDirectory
+	dataEntry    *DataEntry
+	subdirectory *Directory
 }
 
-type resourceString struct {
+type String struct {
 	offset uint32
 	string
-}
-
-type rawResourceDataEntry struct {
-	DataRVA  uint32
-	Size     uint32
-	Codepage uint32
-	Reserved uint32
-}
-
-type resourceDataEntry struct {
-	offset uint32
-	data   *resourceData
-}
-
-type resourceData struct {
-	offset uint32
-	common.Blob
 }

@@ -13,14 +13,14 @@ import (
 
 // Section is a .rsrc section.
 type Section struct {
-	rootDir     *resourceDirectory
+	rootDir     *Directory
 	relocations []coff.Relocation
 }
 
 // New returns newly created .rsrc section.
 func New() *Section {
 	return &Section{
-		rootDir: &resourceDirectory{},
+		rootDir: &Directory{},
 	}
 }
 
@@ -150,8 +150,8 @@ func (s *Section) addManifest(id *int, name *string, manifest common.Blob) error
 	return nil
 }
 
-func (s *Section) addResource(typ int, id *int, name *string, blob common.Blob) (*resourceDataEntry, error) {
-	var subdir *resourceDirectory
+func (s *Section) addResource(typ int, id *int, name *string, blob common.Blob) (*DataEntry, error) {
+	var subdir *Directory
 	var err error
 
 	for _, e := range s.rootDir.idEntries {
@@ -192,19 +192,19 @@ func (s *Section) freeze() uint32 {
 
 	s.relocations = nil
 
-	s.rootDir.walk(func(dir *resourceDirectory) error {
+	s.rootDir.walk(func(dir *Directory) error {
 		// TODO: instead of calculating size of newly created dummy structure,
 		// use fixed constant.
 		dir.offset = offset
-		offset += uint32(binary.Size(&rawResourceDirectory{}))
+		offset += uint32(binary.Size(&rawDirectory{}))
 		for _, e := range dir.entries() {
 			e.offset = offset
-			offset += uint32(binary.Size(&rawResourceDirectoryEntry{}))
+			offset += uint32(binary.Size(&rawDirectoryEntry{}))
 		}
 		return nil
 	})
 
-	s.rootDir.walk(func(dir *resourceDirectory) error {
+	s.rootDir.walk(func(dir *Directory) error {
 		for _, str := range dir.strings {
 			str.offset = offset
 			// TODO: should we encode string to calculate its utf-16
@@ -214,18 +214,18 @@ func (s *Section) freeze() uint32 {
 		return nil
 	})
 
-	s.rootDir.walk(func(dir *resourceDirectory) error {
+	s.rootDir.walk(func(dir *Directory) error {
 		for _, e := range dir.dataEntries() {
 			e.offset = offset
-			s.relocations = append(s.relocations, &relocation{
+			s.relocations = append(s.relocations, &Relocation{
 				va: offset,
 			})
-			offset += uint32(binary.Size(&rawResourceDataEntry{}))
+			offset += uint32(binary.Size(&rawDataEntry{}))
 		}
 		return nil
 	})
 
-	s.rootDir.walk(func(dir *resourceDirectory) error {
+	s.rootDir.walk(func(dir *Directory) error {
 		for _, d := range dir.datas() {
 			d.offset = offset
 			offset += uint32(d.Size())
@@ -242,8 +242,8 @@ func (s *Section) WriteTo(w io.Writer) (int64, error) {
 
 	s.freeze()
 
-	if err := s.rootDir.walk(func(dir *resourceDirectory) error {
-		n, err := common.BinaryWriteTo(w, &rawResourceDirectory{
+	if err := s.rootDir.walk(func(dir *Directory) error {
+		n, err := common.BinaryWriteTo(w, &rawDirectory{
 			Characteristics:     dir.characteristics,
 			NumberOfNameEntries: uint16(len(dir.nameEntries)),
 			NumberOfIDEntries:   uint16(len(dir.idEntries)),
@@ -266,7 +266,7 @@ func (s *Section) WriteTo(w io.Writer) (int64, error) {
 			} else {
 				o = e.subdirectory.offset | 0x80000000
 			}
-			n, err := common.BinaryWriteTo(w, &rawResourceDirectoryEntry{
+			n, err := common.BinaryWriteTo(w, &rawDirectoryEntry{
 				NameOffsetOrIntegerID:               id,
 				DataEntryOffsetOrSubdirectoryOffset: o,
 			})
@@ -281,7 +281,7 @@ func (s *Section) WriteTo(w io.Writer) (int64, error) {
 		return written, err
 	}
 
-	if err := s.rootDir.walk(func(dir *resourceDirectory) error {
+	if err := s.rootDir.walk(func(dir *Directory) error {
 		for _, str := range dir.strings {
 			u := utf16.Encode([]rune(str.string))
 			n, err := common.BinaryWriteTo(w, uint16(len(u)))
@@ -300,9 +300,9 @@ func (s *Section) WriteTo(w io.Writer) (int64, error) {
 		return written, err
 	}
 
-	if err := s.rootDir.walk(func(dir *resourceDirectory) error {
+	if err := s.rootDir.walk(func(dir *Directory) error {
 		for i, e := range dir.dataEntries() {
-			n, err := common.BinaryWriteTo(w, &rawResourceDataEntry{
+			n, err := common.BinaryWriteTo(w, &rawDataEntry{
 				DataRVA: e.data.offset,
 				Size:    uint32(e.data.Size()),
 			})
@@ -316,7 +316,7 @@ func (s *Section) WriteTo(w io.Writer) (int64, error) {
 		return written, err
 	}
 
-	if err := s.rootDir.walk(func(dir *resourceDirectory) error {
+	if err := s.rootDir.walk(func(dir *Directory) error {
 		for i, d := range dir.datas() {
 			n, err := io.CopyN(w, d, d.Size())
 			if err != nil {
@@ -330,12 +330,4 @@ func (s *Section) WriteTo(w io.Writer) (int64, error) {
 	}
 
 	return written, nil
-}
-
-type relocation struct {
-	va uint32
-}
-
-func (r *relocation) VirtualAddress() uint32 {
-	return r.va
 }
