@@ -9,11 +9,13 @@ type rawDataEntry struct {
 	Reserved uint32
 }
 
+// DataEntry is a header for Data.
 type DataEntry struct {
 	offset uint32
 	data   *Data
 }
 
+// Data represents actual binary resource data in .rsrc section.
 type Data struct {
 	offset uint32
 	common.Blob

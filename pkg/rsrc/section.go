@@ -7,41 +7,39 @@ import (
 
 	"github.com/hallazzang/syso/pkg/coff"
 	"github.com/hallazzang/syso/pkg/common"
-	"github.com/hallazzang/syso/pkg/ico"
 	"github.com/pkg/errors"
 )
 
-// Section is a .rsrc section.
+// Section represents the .rsrc section in PE file.
 type Section struct {
 	rootDir     *Directory
 	relocations []coff.Relocation
 }
 
-// New returns newly created .rsrc section.
+// New returns an empty .rsrc section.
 func New() *Section {
 	return &Section{
 		rootDir: &Directory{},
 	}
 }
 
-// Name returns section's name, which is .rsrc in general.
+// Name returns the section's name, ".rsrc".
 func (s *Section) Name() string {
 	return ".rsrc"
 }
 
-// Size returns section's size. It traverses the section's tree
-// structure internally when it called.
+// Size returns the section's size.
 func (s *Section) Size() int {
 	return int(s.freeze())
 }
 
-// Relocations returns relocations needed by this section.
+// Relocations returns relocations that should be applied to the section.
 func (s *Section) Relocations() []coff.Relocation {
 	s.freeze()
 	return s.relocations
 }
 
-// ResourceIDExists returns true if a resource with given id exists.
+// ResourceIDExists returns true if a resource with given integer id exists.
 func (s *Section) ResourceIDExists(id int) bool {
 	for _, e := range s.rootDir.idEntries {
 		if e.subdirectory != nil {
@@ -69,87 +67,8 @@ func (s *Section) ResourceNameExists(name string) bool {
 	return false
 }
 
-// AddIconByID adds a single icon resource identified by an integer id to section.
-func (s *Section) AddIconByID(id int, icon *ico.Image) error {
-	return s.addIcon(&id, nil, icon)
-}
-
-// AddIconByName adds a single icon resource identified by name to section.
-func (s *Section) AddIconByName(name string, icon *ico.Image) error {
-	return s.addIcon(nil, &name, icon)
-}
-
-func (s *Section) addIcon(id *int, name *string, icon *ico.Image) error {
-	if _, err := s.addResource(iconResource, id, name, icon); err != nil {
-		return errors.Wrap(err, "failed to add icon resource")
-	}
-	return nil
-}
-
-// AddIconGroupByID adds icon group resource identified by an integer id.
-func (s *Section) AddIconGroupByID(id int, icons *ico.Group) error {
-	return s.addIconGroup(&id, nil, icons)
-}
-
-// AddIconGroupByName adds icon group resource identified by name.
-func (s *Section) AddIconGroupByName(name string, icons *ico.Group) error {
-	return s.addIconGroup(nil, &name, icons)
-}
-
-func (s *Section) addIconGroup(id *int, name *string, icons *ico.Group) error {
-	if _, err := s.addResource(iconGroupResource, id, name, icons); err != nil {
-		return errors.Wrap(err, "failed to add icon group resource")
-	}
-	return nil
-}
-
-// AddIconsByID adds an icon group resource identified by an integer id to section.
-// Each image in icon group must have a valid resource id when using this method.
-func (s *Section) AddIconsByID(id int, icons *ico.Group) error {
-	return s.addIcons(&id, nil, icons)
-}
-
-// AddIconsByName adds an icon group resource identified by name to section.
-// Each image in icon group must have a valid resource id when using this method.
-func (s *Section) AddIconsByName(name string, icons *ico.Group) error {
-	return s.addIcons(nil, &name, icons)
-}
-
-func (s *Section) addIcons(id *int, name *string, icons *ico.Group) error {
-	if err := s.addIconGroup(id, name, icons); err != nil {
-		return err
-	}
-	for i, img := range icons.Images {
-		if img.ID == 0 {
-			return errors.Errorf("icon image #%d doesn't have an id; id must be set manually", i)
-		}
-		if id != nil && img.ID == *id {
-			return errors.Errorf("icon group's id cannot be same as image #%d's id(%d)", i, img.ID)
-		}
-		if err := s.AddIconByID(img.ID, img); err != nil {
-			return errors.Wrapf(err, "failed to add icon resource #%d", i)
-		}
-	}
-	return nil
-}
-
-// AddManifestByID adds a manifest resource identified by an integer id to section.
-func (s *Section) AddManifestByID(id int, manifest common.Blob) error {
-	return s.addManifest(&id, nil, manifest)
-}
-
-// AddManifestByName adds a manifest resource identified by name to section.
-func (s *Section) AddManifestByName(name string, manifest common.Blob) error {
-	return s.addManifest(nil, &name, manifest)
-}
-
-func (s *Section) addManifest(id *int, name *string, manifest common.Blob) error {
-	if _, err := s.addResource(manifestResource, id, name, manifest); err != nil {
-		return errors.Wrap(err, "failed to add manifest resource")
-	}
-	return nil
-}
-
+// AddResourceByID adds resource blob with arbitrary type identified by
+// an integer id into the section.
 func (s *Section) AddResourceByID(typ, id int, blob common.Blob) error {
 	if _, err := s.addResource(typ, &id, nil, blob); err != nil {
 		return err
@@ -157,6 +76,8 @@ func (s *Section) AddResourceByID(typ, id int, blob common.Blob) error {
 	return nil
 }
 
+// AddResourceByName adds resource blob with arbitrary type identified by
+// a name into the section.
 func (s *Section) AddResourceByName(typ int, name string, blob common.Blob) error {
 	if _, err := s.addResource(typ, nil, &name, blob); err != nil {
 		return err

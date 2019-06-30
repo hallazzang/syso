@@ -1,10 +1,11 @@
 package rsrc
 
+// Common resource types.
 const (
-	iconResource      = 3
-	iconGroupResource = 14
-	versionResource   = 16
-	manifestResource  = 24
+	IconResource        = 3
+	IconGroupResource   = 14
+	VersionInfoResource = 16
+	ManifestResource    = 24
 )
 
 const (

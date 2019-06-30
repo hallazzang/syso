@@ -16,6 +16,8 @@ type rawDirectory struct {
 	NumberOfIDEntries   uint16
 }
 
+// Directory is the main structure for .rsrc section that can hold
+// subdirectories or data.
 type Directory struct {
 	offset          uint32
 	characteristics uint32
@@ -151,6 +153,7 @@ type rawDirectoryEntry struct {
 	DataEntryOffsetOrSubdirectoryOffset uint32
 }
 
+// DirectoryEntry is a header for Directory.
 type DirectoryEntry struct {
 	offset       uint32
 	name         *String
@@ -159,6 +162,7 @@ type DirectoryEntry struct {
 	subdirectory *Directory
 }
 
+// String holds a resource string.
 type String struct {
 	offset uint32
 	string
