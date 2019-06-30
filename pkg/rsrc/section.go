@@ -150,6 +150,20 @@ func (s *Section) addManifest(id *int, name *string, manifest common.Blob) error
 	return nil
 }
 
+func (s *Section) AddResourceByID(typ, id int, blob common.Blob) error {
+	if _, err := s.addResource(typ, &id, nil, blob); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Section) AddResourceByName(typ int, name string, blob common.Blob) error {
+	if _, err := s.addResource(typ, nil, &name, blob); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (s *Section) addResource(typ int, id *int, name *string, blob common.Blob) (*DataEntry, error) {
 	var subdir *Directory
 	var err error
