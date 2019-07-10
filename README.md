@@ -14,12 +14,13 @@ Table of contents:
 
 ## Features
 
-| Feature                        | [rsrc] | [goversioninfo] | syso(this project) |
-|:-------------------------------|:------:|:---------------:|:------------------:|
-| Embedding icons                | ✔      | ✔               | ✔                  |
-| Embedding manifest             | ✔      | ✔               | ✔                  |
-| Embedding version info         |        | ✔               | (WIP)               |
-| Fixed resource identifier      |        |                 | ✔                  |
+| Feature                      | [rsrc] | [goversioninfo] | syso(this project) |
+|:-----------------------------|:------:|:---------------:|:------------------:|
+| Embedding icons              | ✔      | ✔               | ✔                  |
+| Embedding manifest           | ✔      | ✔               | ✔                  |
+| Configuration through a file |        | ✔               | ✔                  |
+| Embedding version info       |        | ✔               | (WIP)               |
+| Fixed resource identifier    |        |                 | ✔                  |
 
 ## Installation
 
