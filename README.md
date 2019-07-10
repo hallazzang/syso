@@ -5,18 +5,23 @@
 
 **syso** - tool for embedding various resources in go executable
 
+Table of contents:
+
+- [Features](#Features)
+- [Installation](#Installation)
+- [Usage](#Usage)
+- [License](#License)
+
 ## Features
 
-- [x] Embed resources by **fixed** integer id
-- [x] Embed resources by **fixed** string name
+| Feature                        | [rsrc] | [goversioninfo] | syso(this project) |
+|:-------------------------------|:------:|:---------------:|:------------------:|
+| Embedding icons                | ✔      | ✔               | ✔                  |
+| Embedding manifest             | ✔      | ✔               | ✔                  |
+| Embedding version info         |        | ✔               | (WIP)               |
+| Fixed resource identifier      |        |                 | ✔                  |
 
-## Supported Resources
-
-- [x] Icons
-- [x] Manifest
-- [ ] Version info
-
-## Install
+## Installation
 
 ```
 $ go get -u github.com/hallazzang/syso/...
@@ -68,3 +73,5 @@ MIT
 
 [godoc]: https://godoc.org/github.com/hallazzang/syso?status.svg
 [goreportcard]: https://goreportcard.com/badge/github.com/hallazzang/syso
+[rsrc]: https://github.com/akavel/rsrc
+[goversioninfo]: https://github.com/josephspurrier/goversioninfo
