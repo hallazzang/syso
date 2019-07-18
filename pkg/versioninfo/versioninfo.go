@@ -1,9 +1,58 @@
 package versioninfo
 
+import (
+	"regexp"
+	"strconv"
+
+	"github.com/pkg/errors"
+)
+
 type VersionInfo struct {
 	fixedFileInfo  fixedFileInfo
 	stringFileInfo *stringFileInfo
 	varFileInfo    *varFileInfo
+}
+
+func (vi *VersionInfo) SetFileVersion(v uint64) {
+	vi.fixedFileInfo.fileVersion = v
+}
+
+func (vi *VersionInfo) SetFileVersionString(s string) error {
+	v, err := parseVersionString(s)
+	if err != nil {
+		return errors.Wrap(err, "failed to parse version string")
+	}
+	vi.fixedFileInfo.fileVersion = v
+	return nil
+}
+
+func (vi *VersionInfo) SetProductVersion(v uint64) {
+	vi.fixedFileInfo.productVersion = v
+}
+
+func (vi *VersionInfo) SetProductVersionString(s string) error {
+	v, err := parseVersionString(s)
+	if err != nil {
+		return errors.Wrap(err, "failed to parse version string")
+	}
+	vi.fixedFileInfo.productVersion = v
+	return nil
+}
+
+func parseVersionString(s string) (uint64, error) {
+	r := regexp.MustCompile(`^(\d+)\.(\d+)\.(\d+)\.(\d+)$`).FindStringSubmatch(s)
+	if len(r) == 0 {
+		return 0, errors.Errorf("invalid version string format; %q", s)
+	}
+	var v uint64
+	for _, c := range r[1:] {
+		n, err := strconv.ParseUint(c, 10, 16)
+		if err != nil {
+			return 0, errors.Wrapf(err, "failed to parse version component; %q", c)
+		}
+		v = (v << 16) | n
+	}
+	return v, nil
 }
 
 type fixedFileInfo struct {
