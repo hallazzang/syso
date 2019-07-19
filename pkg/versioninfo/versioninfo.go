@@ -76,6 +76,57 @@ func parseVersionString(s string) (uint64, error) {
 	return v, nil
 }
 
+func (vi VersionInfo) String(language, codepage uint16, key string) (string, bool) {
+	st := vi.stringTable(language, codepage)
+	for _, s := range st.strings {
+		if s.key == key {
+			return s.value, true
+		}
+	}
+	return "", false
+}
+
+func (vi *VersionInfo) SetString(language, codepage uint16, key, value string) {
+	st := vi.stringTable(language, codepage)
+	f := false
+	for _, s := range st.strings {
+		if s.key == key {
+			s.value = value
+			f = true
+			break
+		}
+	}
+	if !f {
+		st.strings = append(st.strings, &_string{
+			key:   key,
+			value: value,
+		})
+	}
+}
+
+func (vi *VersionInfo) stringTable(language, codepage uint16) *stringTable {
+	if vi.stringFileInfo == nil {
+		vi.stringFileInfo = &stringFileInfo{}
+	}
+	var st *stringTable
+	for _, t := range vi.stringFileInfo.stringTables {
+		if t.language == language && t.codepage == codepage {
+			st = t
+			break
+		}
+	}
+	if st == nil {
+		st = &stringTable{
+			language: language,
+			codepage: codepage,
+		}
+		vi.stringFileInfo.stringTables = append(vi.stringFileInfo.stringTables, st)
+	}
+	return st
+}
+
+// TODO: add methods for getting/setting FileFlags, OS, etc.
+
 type fixedFileInfo struct {
 	// structVersion uint32 // TODO: do we need it?
 	fileVersion    uint64
@@ -105,13 +156,13 @@ type rawFixedFileInfo struct {
 }
 
 type stringFileInfo struct {
-	stringTables []stringTable
+	stringTables []*stringTable
 }
 
 type stringTable struct {
 	language uint16
 	codepage uint16
-	strings  []_string
+	strings  []*_string
 }
 
 type _string struct {
@@ -120,7 +171,7 @@ type _string struct {
 }
 
 type varFileInfo struct {
-	translations []translation
+	translations []*translation
 }
 
 type translation struct {

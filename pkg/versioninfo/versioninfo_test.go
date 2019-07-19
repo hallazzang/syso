@@ -24,3 +24,13 @@ func TestParseVersionString(t *testing.T) {
 		t.Errorf("mismatching version; expected 0x0001000200030004, got %#016x", v)
 	}
 }
+
+func TestString(t *testing.T) {
+	vi := &VersionInfo{}
+	vi.SetString(0x0409, 0x04b0, "foo", "bar")
+	if s, ok := vi.String(0x0409, 0x04b0, "foo"); !ok {
+		t.Fatal("cannot get string")
+	} else if s != "bar" {
+		t.Fatal("wrong string")
+	}
+}
