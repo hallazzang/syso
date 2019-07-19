@@ -76,8 +76,11 @@ func parseVersionString(s string) (uint64, error) {
 	return v, nil
 }
 
-func (vi VersionInfo) String(language, codepage uint16, key string) (string, bool) {
-	st := vi.stringTable(language, codepage)
+func (vi *VersionInfo) String(language, codepage uint16, key string) (string, bool) {
+	st := vi.stringTable(language, codepage, false)
+	if st == nil {
+		return "", false
+	}
 	for _, s := range st.strings {
 		if s.key == key {
 			return s.value, true
@@ -87,7 +90,7 @@ func (vi VersionInfo) String(language, codepage uint16, key string) (string, boo
 }
 
 func (vi *VersionInfo) SetString(language, codepage uint16, key, value string) {
-	st := vi.stringTable(language, codepage)
+	st := vi.stringTable(language, codepage, true)
 	f := false
 	for _, s := range st.strings {
 		if s.key == key {
@@ -104,8 +107,11 @@ func (vi *VersionInfo) SetString(language, codepage uint16, key, value string) {
 	}
 }
 
-func (vi *VersionInfo) stringTable(language, codepage uint16) *stringTable {
+func (vi *VersionInfo) stringTable(language, codepage uint16, createIfNotExists bool) *stringTable {
 	if vi.stringFileInfo == nil {
+		if !createIfNotExists {
+			return nil
+		}
 		vi.stringFileInfo = &stringFileInfo{}
 	}
 	var st *stringTable
@@ -116,6 +122,9 @@ func (vi *VersionInfo) stringTable(language, codepage uint16) *stringTable {
 		}
 	}
 	if st == nil {
+		if !createIfNotExists {
+			return nil
+		}
 		st = &stringTable{
 			language: language,
 			codepage: codepage,

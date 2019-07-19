@@ -1,6 +1,8 @@
 package versioninfo
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestFormatVersionString(t *testing.T) {
 	if formatVersionString(0x0001000200030004) != "1.2.3.4" {
@@ -32,5 +34,8 @@ func TestString(t *testing.T) {
 		t.Fatal("cannot get string")
 	} else if s != "bar" {
 		t.Fatal("wrong string")
+	}
+	if _, ok := vi.String(0x1, 0x2, "foo"); ok {
+		t.Fatal("must not get string")
 	}
 }
