@@ -134,6 +134,21 @@ func (vi *VersionInfo) stringTable(language, codepage uint16, createIfNotExists 
 	return st
 }
 
+func (vi *VersionInfo) AddTranslation(language, codepage uint16) {
+	if vi.varFileInfo == nil {
+		vi.varFileInfo = &varFileInfo{}
+	}
+	for _, t := range vi.varFileInfo.translations {
+		if t.language == language && t.codepage == codepage {
+			return
+		}
+	}
+	vi.varFileInfo.translations = append(vi.varFileInfo.translations, &translation{
+		language: language,
+		codepage: codepage,
+	})
+}
+
 // TODO: add methods for getting/setting FileFlags, OS, etc.
 
 type fixedFileInfo struct {
