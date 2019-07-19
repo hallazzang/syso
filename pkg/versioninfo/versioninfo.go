@@ -1,10 +1,12 @@
 package versioninfo
 
 import (
+	"encoding/binary"
 	"fmt"
 	"io"
 	"regexp"
 	"strconv"
+	"unicode/utf16"
 
 	"github.com/pkg/errors"
 )
@@ -15,9 +17,9 @@ type freezable interface {
 }
 
 type VersionInfo struct {
-	length         uint32
-	valueLength    uint32
-	fixedFileInfo  fixedFileInfo
+	length         uint16
+	valueLength    uint16
+	fixedFileInfo  fixedFileInfo // TODO: make fixedFileInfo optional
 	stringFileInfo *stringFileInfo
 	varFileInfo    *varFileInfo
 }
@@ -39,7 +41,18 @@ func (vi *VersionInfo) WriteTo(w io.Writer) (int64, error) {
 }
 
 func (vi *VersionInfo) freeze() {
-
+	for _, c := range vi.freezableChildren() {
+		c.freeze()
+	}
+	vi.valueLength = uint16(binary.Size(rawFixedFileInfo{}))
+	vi.length = uint16(binary.Size(rawVersionInfo{}))
+	vi.length += paddingLength(vi.length)
+	if vi.stringFileInfo != nil {
+		vi.length += vi.stringFileInfo.length
+	}
+	if vi.varFileInfo != nil {
+		vi.length += vi.varFileInfo.length
+	}
 }
 
 func (vi *VersionInfo) freezableChildren() []freezable {
@@ -219,7 +232,7 @@ type rawFixedFileInfo struct {
 }
 
 type stringFileInfo struct {
-	length       uint32
+	length       uint16
 	stringTables []*stringTable
 }
 
@@ -233,7 +246,13 @@ type rawStringFileInfo struct {
 }
 
 func (sfi *stringFileInfo) freeze() {
-	panic("not implemented")
+	for _, c := range sfi.freezableChildren() {
+		c.freeze()
+	}
+	sfi.length = uint16(binary.Size(rawStringFileInfo{}))
+	for _, st := range sfi.stringTables {
+		sfi.length += st.length
+	}
 }
 
 func (sfi *stringFileInfo) freezableChildren() []freezable {
@@ -245,7 +264,7 @@ func (sfi *stringFileInfo) freezableChildren() []freezable {
 }
 
 type stringTable struct {
-	length   uint32
+	length   uint16
 	language uint16
 	codepage uint16
 	strings  []*_string
@@ -261,7 +280,13 @@ type rawStringTable struct {
 }
 
 func (st *stringTable) freeze() {
-	panic("not implemented")
+	for _, c := range st.freezableChildren() {
+		c.freeze()
+	}
+	st.length = uint16(binary.Size(rawStringTable{}))
+	for _, s := range st.strings {
+		st.length += s.length
+	}
 }
 
 func (st *stringTable) freezableChildren() []freezable {
@@ -289,7 +314,11 @@ type rawString struct {
 }
 
 func (s *_string) freeze() {
-	panic("not implemented")
+	s.valueLength = uint16(binary.Size(utf16.Encode([]rune(s.value))))
+	s.length = uint16(binary.Size(rawString{}))
+	s.length += uint16(binary.Size(utf16.Encode([]rune(s.key))))
+	s.length += paddingLength(s.length)
+	s.length += s.valueLength
 }
 
 func (s *_string) freezableChildren() []freezable {
@@ -311,7 +340,11 @@ type rawVarFileInfo struct {
 }
 
 func (vfi *varFileInfo) freeze() {
-	panic("not implemented")
+	for _, c := range vfi.freezableChildren() {
+		c.freeze()
+	}
+	vfi.length = uint16(binary.Size(rawVarFileInfo{}))
+	vfi.length += vfi._var.length
 }
 
 func (vfi *varFileInfo) freezableChildren() []freezable {
@@ -334,7 +367,10 @@ type rawVar struct {
 }
 
 func (v *_var) freeze() {
-	panic("not implemented")
+	v.valueLength = uint16(binary.Size(translation{}) * len(v.translations))
+	v.length = uint16(binary.Size(rawVar{}))
+	v.length += paddingLength(v.length)
+	v.length += v.valueLength
 }
 
 func (v *_var) freezableChildren() []freezable {
@@ -344,4 +380,8 @@ func (v *_var) freezableChildren() []freezable {
 type translation struct {
 	language uint16
 	codepage uint16
+}
+
+func paddingLength(n uint16) uint16 {
+	return (4 - (n % 4)) % 4
 }

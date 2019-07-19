@@ -39,3 +39,35 @@ func TestString(t *testing.T) {
 		t.Fatal("must not get string")
 	}
 }
+
+func TestFreezeEmpty(t *testing.T) {
+	vi := &VersionInfo{}
+	vi.freeze()
+	if vi.length != 88 {
+		t.Fatalf("wrong VersionInfo.length; expected 88, got %d", vi.length)
+	}
+	if vi.valueLength != 52 {
+		t.Fatalf("wrong VersionInfo.valueLength; expected 52, got %d", vi.valueLength)
+	}
+}
+
+func TestFreeze(t *testing.T) {
+	vi := &VersionInfo{}
+	vi.SetString(0x0409, 0x04b0, "foo", "bar")
+	vi.freeze()
+	if vi.length != 166 {
+		t.Fatalf("wrong VersionInfo.length; expected 166, got %d", vi.length)
+	}
+	if vi.stringFileInfo.length != 78 {
+		t.Fatalf("wrong VersionInfo.stringFileInfo.length; expected 78, got %d", vi.stringFileInfo.length)
+	}
+	if vi.stringFileInfo.stringTables[0].length != 42 {
+		t.Fatalf("wrong VersionInfo.stringFileInfo.stringTables[0].length; expected 42, got %d", vi.stringFileInfo.stringTables[0].length)
+	}
+	if vi.stringFileInfo.stringTables[0].strings[0].length != 18 {
+		t.Fatalf("wrong VersionInfo.stringFileInfo.stringTables[0].strings[0].length; expected 18, got %d", vi.stringFileInfo.stringTables[0].strings[0].length)
+	}
+	if vi.stringFileInfo.stringTables[0].strings[0].valueLength != 6 {
+		t.Fatalf("wrong VersionInfo.stringFileInfo.stringTables[0].strings[0].valueLength; expected 6, got %d", vi.stringFileInfo.stringTables[0].strings[0].valueLength)
+	}
+}
