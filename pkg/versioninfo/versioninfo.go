@@ -2,6 +2,7 @@ package versioninfo
 
 import (
 	"fmt"
+	"io"
 	"regexp"
 	"strconv"
 
@@ -14,11 +15,20 @@ type VersionInfo struct {
 	varFileInfo    *varFileInfo
 }
 
-func (vi VersionInfo) FileVersion() uint64 {
+func (vi *VersionInfo) WriteTo(w io.Writer) (int64, error) {
+	vi.freeze()
+	return 0, nil
+}
+
+func (vi *VersionInfo) freeze() {
+
+}
+
+func (vi *VersionInfo) FileVersion() uint64 {
 	return vi.fixedFileInfo.fileVersion
 }
 
-func (vi VersionInfo) FileVersionString() string {
+func (vi *VersionInfo) FileVersionString() string {
 	return formatVersionString(vi.fixedFileInfo.fileVersion)
 }
 
@@ -35,11 +45,11 @@ func (vi *VersionInfo) SetFileVersionString(s string) error {
 	return nil
 }
 
-func (vi VersionInfo) ProductVersion() uint64 {
+func (vi *VersionInfo) ProductVersion() uint64 {
 	return vi.fixedFileInfo.productVersion
 }
 
-func (vi VersionInfo) ProductVersionString() string {
+func (vi *VersionInfo) ProductVersionString() string {
 	return formatVersionString(vi.fixedFileInfo.productVersion)
 }
 
