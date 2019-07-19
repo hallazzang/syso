@@ -9,6 +9,11 @@ import (
 	"github.com/pkg/errors"
 )
 
+type freezable interface {
+	freeze()
+	freezableChildren() []freezable
+}
+
 type VersionInfo struct {
 	length         uint32
 	valueLength    uint32
@@ -34,6 +39,18 @@ func (vi *VersionInfo) WriteTo(w io.Writer) (int64, error) {
 }
 
 func (vi *VersionInfo) freeze() {
+
+}
+
+func (vi *VersionInfo) freezableChildren() []freezable {
+	var r []freezable
+	if vi.stringFileInfo != nil {
+		r = append(r, vi.stringFileInfo)
+	}
+	if vi.varFileInfo != nil {
+		r = append(r, vi.varFileInfo)
+	}
+	return r
 }
 
 func (vi *VersionInfo) FileVersion() uint64 {
@@ -160,12 +177,12 @@ func (vi *VersionInfo) AddTranslation(language, codepage uint16) {
 	if vi.varFileInfo == nil {
 		vi.varFileInfo = &varFileInfo{}
 	}
-	for _, t := range vi.varFileInfo.vars {
+	for _, t := range vi.varFileInfo._var.translations {
 		if t.language == language && t.codepage == codepage {
 			return
 		}
 	}
-	vi.varFileInfo.vars = append(vi.varFileInfo.vars, &_var{
+	vi.varFileInfo._var.translations = append(vi.varFileInfo._var.translations, &translation{
 		language: language,
 		codepage: codepage,
 	})
@@ -215,6 +232,18 @@ type rawStringFileInfo struct {
 	// Children    []rawStringTable
 }
 
+func (sfi *stringFileInfo) freeze() {
+	panic("not implemented")
+}
+
+func (sfi *stringFileInfo) freezableChildren() []freezable {
+	var r []freezable
+	for _, st := range sfi.stringTables {
+		r = append(r, st)
+	}
+	return r
+}
+
 type stringTable struct {
 	length   uint32
 	language uint16
@@ -229,6 +258,18 @@ type rawStringTable struct {
 	Key         [8]uint16
 	Padding     [1]uint16
 	// Children    []rawString
+}
+
+func (st *stringTable) freeze() {
+	panic("not implemented")
+}
+
+func (st *stringTable) freezableChildren() []freezable {
+	var r []freezable
+	for _, s := range st.strings {
+		r = append(r, s)
+	}
+	return r
 }
 
 type _string struct {
@@ -247,9 +288,17 @@ type rawString struct {
 	// Value       []uint16
 }
 
+func (s *_string) freeze() {
+	panic("not implemented")
+}
+
+func (s *_string) freezableChildren() []freezable {
+	return nil
+}
+
 type varFileInfo struct {
 	length uint16
-	vars   []*_var
+	_var   _var
 }
 
 type rawVarFileInfo struct {
@@ -258,14 +307,21 @@ type rawVarFileInfo struct {
 	Type        uint16
 	Key         [11]uint16
 	// Padding     [0]uint16
-	Children []rawVar
+	Children rawVar
+}
+
+func (vfi *varFileInfo) freeze() {
+	panic("not implemented")
+}
+
+func (vfi *varFileInfo) freezableChildren() []freezable {
+	return []freezable{&vfi._var}
 }
 
 type _var struct {
-	length      uint16
-	valueLength uint16
-	language    uint16
-	codepage    uint16
+	length       uint16
+	valueLength  uint16
+	translations []*translation
 }
 
 type rawVar struct {
@@ -275,4 +331,17 @@ type rawVar struct {
 	Key         [11]uint16
 	// Padding     [0]uint16
 	// Value []uint32
+}
+
+func (v *_var) freeze() {
+	panic("not implemented")
+}
+
+func (v *_var) freezableChildren() []freezable {
+	return nil
+}
+
+type translation struct {
+	language uint16
+	codepage uint16
 }
