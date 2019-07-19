@@ -1,6 +1,7 @@
 package versioninfo
 
 import (
+	"fmt"
 	"regexp"
 	"strconv"
 
@@ -11,6 +12,14 @@ type VersionInfo struct {
 	fixedFileInfo  fixedFileInfo
 	stringFileInfo *stringFileInfo
 	varFileInfo    *varFileInfo
+}
+
+func (vi VersionInfo) FileVersion() uint64 {
+	return vi.fixedFileInfo.fileVersion
+}
+
+func (vi VersionInfo) FileVersionString() string {
+	return formatVersionString(vi.fixedFileInfo.fileVersion)
 }
 
 func (vi *VersionInfo) SetFileVersion(v uint64) {
@@ -26,6 +35,14 @@ func (vi *VersionInfo) SetFileVersionString(s string) error {
 	return nil
 }
 
+func (vi VersionInfo) ProductVersion() uint64 {
+	return vi.fixedFileInfo.productVersion
+}
+
+func (vi VersionInfo) ProductVersionString() string {
+	return formatVersionString(vi.fixedFileInfo.productVersion)
+}
+
 func (vi *VersionInfo) SetProductVersion(v uint64) {
 	vi.fixedFileInfo.productVersion = v
 }
@@ -37,6 +54,10 @@ func (vi *VersionInfo) SetProductVersionString(s string) error {
 	}
 	vi.fixedFileInfo.productVersion = v
 	return nil
+}
+
+func formatVersionString(v uint64) string {
+	return fmt.Sprintf("%d.%d.%d.%d", (v>>48)&0xffff, (v>>32)&0xffff, (v>>16)&0xffff, v&0xffff)
 }
 
 func parseVersionString(s string) (uint64, error) {
