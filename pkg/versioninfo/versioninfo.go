@@ -10,9 +10,22 @@ import (
 )
 
 type VersionInfo struct {
+	length         uint32
+	valueLength    uint32
 	fixedFileInfo  fixedFileInfo
 	stringFileInfo *stringFileInfo
 	varFileInfo    *varFileInfo
+}
+
+type rawVersionInfo struct {
+	Length      uint16
+	ValueLength uint16
+	Type        uint16
+	Key         [15]uint16
+	// Padding     [0]uint16
+	Value rawFixedFileInfo
+	// Padding2 []uint16
+	// Children []interface{}
 }
 
 func (vi *VersionInfo) WriteTo(w io.Writer) (int64, error) {
@@ -21,7 +34,6 @@ func (vi *VersionInfo) WriteTo(w io.Writer) (int64, error) {
 }
 
 func (vi *VersionInfo) freeze() {
-
 }
 
 func (vi *VersionInfo) FileVersion() uint64 {
@@ -148,12 +160,12 @@ func (vi *VersionInfo) AddTranslation(language, codepage uint16) {
 	if vi.varFileInfo == nil {
 		vi.varFileInfo = &varFileInfo{}
 	}
-	for _, t := range vi.varFileInfo.translations {
+	for _, t := range vi.varFileInfo.vars {
 		if t.language == language && t.codepage == codepage {
 			return
 		}
 	}
-	vi.varFileInfo.translations = append(vi.varFileInfo.translations, &translation{
+	vi.varFileInfo.vars = append(vi.varFileInfo.vars, &_var{
 		language: language,
 		codepage: codepage,
 	})
@@ -190,25 +202,77 @@ type rawFixedFileInfo struct {
 }
 
 type stringFileInfo struct {
+	length       uint32
 	stringTables []*stringTable
 }
 
+type rawStringFileInfo struct {
+	Length      uint16
+	ValueLength uint16
+	Type        uint16
+	Key         [14]uint16
+	Padding     [1]uint16
+	// Children    []rawStringTable
+}
+
 type stringTable struct {
+	length   uint32
 	language uint16
 	codepage uint16
 	strings  []*_string
 }
 
+type rawStringTable struct {
+	Length      uint16
+	ValueLength uint16
+	Type        uint16
+	Key         [8]uint16
+	Padding     [1]uint16
+	// Children    []rawString
+}
+
 type _string struct {
-	key   string
-	value string
+	length      uint16
+	valueLength uint16
+	key         string
+	value       string
+}
+
+type rawString struct {
+	Length      uint16
+	ValueLength uint16
+	Type        uint16
+	// Key         []uint16
+	// Padding     []uint16
+	// Value       []uint16
 }
 
 type varFileInfo struct {
-	translations []*translation
+	length uint16
+	vars   []*_var
 }
 
-type translation struct {
-	language uint16
-	codepage uint16
+type rawVarFileInfo struct {
+	Length      uint16
+	ValueLength uint16
+	Type        uint16
+	Key         [11]uint16
+	// Padding     [0]uint16
+	Children []rawVar
+}
+
+type _var struct {
+	length      uint16
+	valueLength uint16
+	language    uint16
+	codepage    uint16
+}
+
+type rawVar struct {
+	Length      uint16
+	ValueLength uint16
+	Type        uint16
+	Key         [11]uint16
+	// Padding     [0]uint16
+	// Value []uint32
 }
