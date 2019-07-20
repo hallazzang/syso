@@ -1,6 +1,7 @@
 package versioninfo
 
 import (
+	"bytes"
 	"testing"
 )
 
@@ -54,7 +55,7 @@ func TestFreezeEmpty(t *testing.T) {
 func TestFreeze(t *testing.T) {
 	vi := &VersionInfo{}
 	vi.SetString(0x0409, 0x04b0, "foo", "bar")
-	vi.freeze()
+	freeze(vi)
 	if vi.length != 166 {
 		t.Fatalf("wrong VersionInfo.length; expected 166, got %d", vi.length)
 	}
@@ -69,5 +70,21 @@ func TestFreeze(t *testing.T) {
 	}
 	if vi.stringFileInfo.stringTables[0].strings[0].valueLength != 6 {
 		t.Fatalf("wrong VersionInfo.stringFileInfo.stringTables[0].strings[0].valueLength; expected 6, got %d", vi.stringFileInfo.stringTables[0].strings[0].valueLength)
+	}
+}
+
+func TestWrite(t *testing.T) {
+	vi := &VersionInfo{}
+	vi.AddTranslation(0x0409, 0x04b0)
+	vi.SetString(0x0409, 0x04b0, "foo", "bar")
+	vi.SetFileVersion(0x0001000200030004)
+
+	b := new(bytes.Buffer)
+	n, err := vi.WriteTo(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n != int64(b.Len()) {
+		t.Fatal("wrong length")
 	}
 }

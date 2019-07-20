@@ -8,12 +8,14 @@ import (
 	"strconv"
 	"unicode/utf16"
 
+	"github.com/hallazzang/syso/pkg/common"
 	"github.com/pkg/errors"
 )
 
-type freezable interface {
+type freezeWriterTo interface {
 	freeze()
-	freezableChildren() []freezable
+	writeTo(io.Writer) (int64, error)
+	freezeWriterToChildren() []freezeWriterTo
 }
 
 type VersionInfo struct {
@@ -37,13 +39,60 @@ type rawVersionInfo struct {
 
 func (vi *VersionInfo) WriteTo(w io.Writer) (int64, error) {
 	vi.freeze()
-	return 0, nil
+	return writeTo(w, vi)
+}
+
+func (vi *VersionInfo) writeTo(w io.Writer) (int64, error) {
+	written, err := common.BinaryWriteTo(w, rawVersionInfo{
+		Length:      vi.length,
+		ValueLength: vi.valueLength,
+		Type:        0,
+		Key:         [15]uint16{0x56, 0x53, 0x5f, 0x56, 0x45, 0x52, 0x53, 0x49, 0x4f, 0x4e, 0x5f, 0x49, 0x4e, 0x46, 0x4f}, // L"VS_VERSION_INFO"
+		Value: rawFixedFileInfo{
+			Signature:        0xFEEF04BD,
+			FileVersionMS:    uint32(vi.fixedFileInfo.fileVersion >> 32),
+			FileVersionLS:    uint32(vi.fixedFileInfo.fileVersion & 0xffffffff),
+			ProductVersionMS: uint32(vi.fixedFileInfo.productVersion >> 32),
+			ProductVersionLS: uint32(vi.fixedFileInfo.productVersion & 0xffffffff),
+			FileFlagsMask:    vi.fixedFileInfo.fileFlagsMask,
+			FileFlags:        vi.fixedFileInfo.fileFlags,
+			FileOS:           vi.fixedFileInfo.fileOS,
+			FileType:         vi.fixedFileInfo.fileType,
+			FileSubtype:      vi.fixedFileInfo.fileSubtype,
+			FileDateMS:       uint32(vi.fixedFileInfo.fileDate >> 32),
+			FileDateLS:       uint32(vi.fixedFileInfo.fileDate & 0xffffffff),
+		},
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	return written, nil
+}
+
+func freeze(wt freezeWriterTo) {
+	for _, c := range wt.freezeWriterToChildren() {
+		freeze(c)
+	}
+	wt.freeze()
+}
+
+func writeTo(w io.Writer, wt freezeWriterTo) (int64, error) {
+	written, err := wt.writeTo(w)
+	if err != nil {
+		return written, err
+	}
+	for _, c := range wt.freezeWriterToChildren() {
+		n, err := c.writeTo(w)
+		if err != nil {
+			return written, err
+		}
+		written += n
+	}
+	return written, nil
 }
 
 func (vi *VersionInfo) freeze() {
-	for _, c := range vi.freezableChildren() {
-		c.freeze()
-	}
 	vi.valueLength = uint16(binary.Size(rawFixedFileInfo{}))
 	vi.length = uint16(binary.Size(rawVersionInfo{}))
 	vi.length += paddingLength(vi.length)
@@ -55,8 +104,8 @@ func (vi *VersionInfo) freeze() {
 	}
 }
 
-func (vi *VersionInfo) freezableChildren() []freezable {
-	var r []freezable
+func (vi *VersionInfo) freezeWriterToChildren() []freezeWriterTo {
+	var r []freezeWriterTo
 	if vi.stringFileInfo != nil {
 		r = append(r, vi.stringFileInfo)
 	}
@@ -246,17 +295,27 @@ type rawStringFileInfo struct {
 }
 
 func (sfi *stringFileInfo) freeze() {
-	for _, c := range sfi.freezableChildren() {
-		c.freeze()
-	}
 	sfi.length = uint16(binary.Size(rawStringFileInfo{}))
 	for _, st := range sfi.stringTables {
 		sfi.length += st.length
 	}
 }
 
-func (sfi *stringFileInfo) freezableChildren() []freezable {
-	var r []freezable
+func (sfi *stringFileInfo) writeTo(w io.Writer) (int64, error) {
+	written, err := common.BinaryWriteTo(w, rawStringFileInfo{
+		Length:      sfi.length,
+		ValueLength: 0,
+		Type:        1,
+		Key:         [14]uint16{0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x46, 0x69, 0x6c, 0x65, 0x49, 0x6e, 0x66, 0x6f}, // L"StringFileInfo"
+	})
+	if err != nil {
+		return 0, err
+	}
+	return written, nil
+}
+
+func (sfi *stringFileInfo) freezeWriterToChildren() []freezeWriterTo {
+	var r []freezeWriterTo
 	for _, st := range sfi.stringTables {
 		r = append(r, st)
 	}
@@ -280,17 +339,29 @@ type rawStringTable struct {
 }
 
 func (st *stringTable) freeze() {
-	for _, c := range st.freezableChildren() {
-		c.freeze()
-	}
 	st.length = uint16(binary.Size(rawStringTable{}))
 	for _, s := range st.strings {
 		st.length += s.length
 	}
 }
 
-func (st *stringTable) freezableChildren() []freezable {
-	var r []freezable
+func (st *stringTable) writeTo(w io.Writer) (int64, error) {
+	var key [8]uint16
+	copy(key[:], utf16.Encode([]rune(fmt.Sprintf("%04x%04x", st.language, st.codepage))))
+	written, err := common.BinaryWriteTo(w, rawStringTable{
+		Length:      st.length,
+		ValueLength: 0,
+		Type:        1,
+		Key:         key,
+	})
+	if err != nil {
+		return 0, err
+	}
+	return written, nil
+}
+
+func (st *stringTable) freezeWriterToChildren() []freezeWriterTo {
+	var r []freezeWriterTo
 	for _, s := range st.strings {
 		r = append(r, s)
 	}
@@ -321,7 +392,38 @@ func (s *_string) freeze() {
 	s.length += s.valueLength
 }
 
-func (s *_string) freezableChildren() []freezable {
+func (s *_string) writeTo(w io.Writer) (int64, error) {
+	written, err := common.BinaryWriteTo(w, rawString{
+		Length:      s.length,
+		ValueLength: s.valueLength,
+		Type:        1,
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	n, err := common.BinaryWriteTo(w, utf16.Encode([]rune(s.key)))
+	if err != nil {
+		return written, err
+	}
+	written += n
+
+	n, err = common.BinaryWriteTo(w, make([]byte, paddingLength(uint16(written))))
+	if err != nil {
+		return written, err
+	}
+	written += n
+
+	n, err = common.BinaryWriteTo(w, utf16.Encode([]rune(s.value)))
+	if err != nil {
+		return written, err
+	}
+	written += n
+
+	return written, nil
+}
+
+func (s *_string) freezeWriterToChildren() []freezeWriterTo {
 	return nil
 }
 
@@ -336,19 +438,30 @@ type rawVarFileInfo struct {
 	Type        uint16
 	Key         [11]uint16
 	// Padding     [0]uint16
-	Children rawVar
+	// Children rawVar
 }
 
 func (vfi *varFileInfo) freeze() {
-	for _, c := range vfi.freezableChildren() {
-		c.freeze()
-	}
 	vfi.length = uint16(binary.Size(rawVarFileInfo{}))
 	vfi.length += vfi._var.length
 }
 
-func (vfi *varFileInfo) freezableChildren() []freezable {
-	return []freezable{&vfi._var}
+func (vfi *varFileInfo) writeTo(w io.Writer) (int64, error) {
+	written, err := common.BinaryWriteTo(w, rawVarFileInfo{
+		Length:      vfi.length,
+		ValueLength: 0,
+		Type:        0,
+		Key:         [11]uint16{0x56, 0x61, 0x72, 0x46, 0x69, 0x6c, 0x65, 0x49, 0x6e, 0x66, 0x6f}, // L"VarFileInfo"
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	return written, nil
+}
+
+func (vfi *varFileInfo) freezeWriterToChildren() []freezeWriterTo {
+	return []freezeWriterTo{&vfi._var}
 }
 
 type _var struct {
@@ -373,7 +486,35 @@ func (v *_var) freeze() {
 	v.length += v.valueLength
 }
 
-func (v *_var) freezableChildren() []freezable {
+func (v *_var) writeTo(w io.Writer) (int64, error) {
+	written, err := common.BinaryWriteTo(w, rawVar{
+		Length:      v.length,
+		ValueLength: v.valueLength,
+		Type:        0,
+		Key:         [11]uint16{0x54, 0x72, 0x61, 0x6e, 0x73, 0x6c, 0x61, 0x74, 0x69, 0x6f, 0x6e}, // L"Translation"
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	for _, t := range v.translations {
+		n, err := common.BinaryWriteTo(w, t.language)
+		if err != nil {
+			return written, err
+		}
+		written += n
+
+		n, err = common.BinaryWriteTo(w, t.codepage)
+		if err != nil {
+			return written, err
+		}
+		written += n
+	}
+
+	return written, nil
+}
+
+func (v *_var) freezeWriterToChildren() []freezeWriterTo {
 	return nil
 }
 
