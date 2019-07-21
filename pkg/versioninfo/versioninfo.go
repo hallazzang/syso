@@ -18,6 +18,29 @@ type freezeWriterTo interface {
 	freezeWriterToChildren() []freezeWriterTo
 }
 
+func freeze(wt freezeWriterTo) {
+	for _, c := range wt.freezeWriterToChildren() {
+		freeze(c)
+	}
+	wt.freeze()
+}
+
+func writeTo(w io.Writer, wt freezeWriterTo) (int64, error) {
+	written, err := wt.writeTo(w)
+	if err != nil {
+		return written, err
+	}
+	for _, c := range wt.freezeWriterToChildren() {
+		n, err := writeTo(w, c)
+		if err != nil {
+			return written, err
+		}
+		written += n
+	}
+	return written, nil
+}
+
+// VersionInfo is a root structure for a version info resource.
 type VersionInfo struct {
 	length         uint16
 	valueLength    uint16
@@ -31,15 +54,28 @@ type rawVersionInfo struct {
 	ValueLength uint16
 	Type        uint16
 	Key         [15]uint16
-	// Padding     [0]uint16
-	Value rawFixedFileInfo
-	// Padding2 []uint16
-	// Children []interface{}
+	Padding     [2]uint16
+	Value       rawFixedFileInfo
+	// Padding2    []uint16
+	// Children    []interface{}
 }
 
+// WriteTo writes content of VersionInfo to w in binary format.
 func (vi *VersionInfo) WriteTo(w io.Writer) (int64, error) {
-	vi.freeze()
+	freeze(vi)
 	return writeTo(w, vi)
+}
+
+func (vi *VersionInfo) freeze() {
+	vi.length = uint16(binary.Size(rawVersionInfo{}))
+	vi.valueLength = uint16(binary.Size(rawFixedFileInfo{}))
+	// NOTE: see NOTE for VersionInfo.writeTo above
+	if vi.stringFileInfo != nil {
+		vi.length += vi.stringFileInfo.length
+	}
+	if vi.varFileInfo != nil {
+		vi.length += vi.varFileInfo.length
+	}
 }
 
 func (vi *VersionInfo) writeTo(w io.Writer) (int64, error) {
@@ -50,6 +86,7 @@ func (vi *VersionInfo) writeTo(w io.Writer) (int64, error) {
 		Key:         [15]uint16{0x56, 0x53, 0x5f, 0x56, 0x45, 0x52, 0x53, 0x49, 0x4f, 0x4e, 0x5f, 0x49, 0x4e, 0x46, 0x4f}, // L"VS_VERSION_INFO"
 		Value: rawFixedFileInfo{
 			Signature:        0xFEEF04BD,
+			StrucVersion:     0x00010000, // TODO: needed?
 			FileVersionMS:    uint32(vi.fixedFileInfo.fileVersion >> 32),
 			FileVersionLS:    uint32(vi.fixedFileInfo.fileVersion & 0xffffffff),
 			ProductVersionMS: uint32(vi.fixedFileInfo.productVersion >> 32),
@@ -67,41 +104,10 @@ func (vi *VersionInfo) writeTo(w io.Writer) (int64, error) {
 		return 0, err
 	}
 
+	// NOTE: no padding is needed here since Value will be aligned on
+	// a 32-bit boundary already
+
 	return written, nil
-}
-
-func freeze(wt freezeWriterTo) {
-	for _, c := range wt.freezeWriterToChildren() {
-		freeze(c)
-	}
-	wt.freeze()
-}
-
-func writeTo(w io.Writer, wt freezeWriterTo) (int64, error) {
-	written, err := wt.writeTo(w)
-	if err != nil {
-		return written, err
-	}
-	for _, c := range wt.freezeWriterToChildren() {
-		n, err := c.writeTo(w)
-		if err != nil {
-			return written, err
-		}
-		written += n
-	}
-	return written, nil
-}
-
-func (vi *VersionInfo) freeze() {
-	vi.valueLength = uint16(binary.Size(rawFixedFileInfo{}))
-	vi.length = uint16(binary.Size(rawVersionInfo{}))
-	vi.length += paddingLength(vi.length)
-	if vi.stringFileInfo != nil {
-		vi.length += vi.stringFileInfo.length
-	}
-	if vi.varFileInfo != nil {
-		vi.length += vi.varFileInfo.length
-	}
 }
 
 func (vi *VersionInfo) freezeWriterToChildren() []freezeWriterTo {
@@ -115,18 +121,24 @@ func (vi *VersionInfo) freezeWriterToChildren() []freezeWriterTo {
 	return r
 }
 
+// FileVersion returns file version in integer.
 func (vi *VersionInfo) FileVersion() uint64 {
 	return vi.fixedFileInfo.fileVersion
 }
 
+// FileVersionString returns file version in string, formatted in
+// "Major.Minor.Patch.Build" form.
 func (vi *VersionInfo) FileVersionString() string {
 	return formatVersionString(vi.fixedFileInfo.fileVersion)
 }
 
+// SetFileVersion sets file version in integer.
 func (vi *VersionInfo) SetFileVersion(v uint64) {
 	vi.fixedFileInfo.fileVersion = v
 }
 
+// SetFileVersionString sets file version in string, returns error
+// if s is not in a form of "Major.Minor.Patch.Build".
 func (vi *VersionInfo) SetFileVersionString(s string) error {
 	v, err := parseVersionString(s)
 	if err != nil {
@@ -136,18 +148,24 @@ func (vi *VersionInfo) SetFileVersionString(s string) error {
 	return nil
 }
 
+// ProductVersion returns product version in integer.
 func (vi *VersionInfo) ProductVersion() uint64 {
 	return vi.fixedFileInfo.productVersion
 }
 
+// ProductVersionString returns product version in string, formatted in
+// "Major.Minor.Patch.Build" form.
 func (vi *VersionInfo) ProductVersionString() string {
 	return formatVersionString(vi.fixedFileInfo.productVersion)
 }
 
+// SetProductVersion sets product version in integer.
 func (vi *VersionInfo) SetProductVersion(v uint64) {
 	vi.fixedFileInfo.productVersion = v
 }
 
+// SetProductVersionString sets product version in string, returns error
+// if s is not in a form "Major.Minor.Patch.Build".
 func (vi *VersionInfo) SetProductVersionString(s string) error {
 	v, err := parseVersionString(s)
 	if err != nil {
@@ -177,6 +195,9 @@ func parseVersionString(s string) (uint64, error) {
 	return v, nil
 }
 
+// String returns a string value from string table which is indicated
+// by given language and codepage pair.
+// The second return value indicates whether the key has found or not.
 func (vi *VersionInfo) String(language, codepage uint16, key string) (string, bool) {
 	st := vi.stringTable(language, codepage, false)
 	if st == nil {
@@ -190,6 +211,8 @@ func (vi *VersionInfo) String(language, codepage uint16, key string) (string, bo
 	return "", false
 }
 
+// SetString sets a string value for a key in string table which is
+// indicated by given language and codepage pair.
 func (vi *VersionInfo) SetString(language, codepage uint16, key, value string) {
 	st := vi.stringTable(language, codepage, true)
 	f := false
@@ -235,6 +258,7 @@ func (vi *VersionInfo) stringTable(language, codepage uint16, createIfNotExists 
 	return st
 }
 
+// AddTranslation adds a translation info.
 func (vi *VersionInfo) AddTranslation(language, codepage uint16) {
 	if vi.varFileInfo == nil {
 		vi.varFileInfo = &varFileInfo{}
@@ -385,11 +409,13 @@ type rawString struct {
 }
 
 func (s *_string) freeze() {
-	s.valueLength = uint16(binary.Size(utf16.Encode([]rune(s.value))))
+	l := uint16(binary.Size(utf16.Encode([]rune(s.value + "\x00"))))
+	s.valueLength = l / 2
 	s.length = uint16(binary.Size(rawString{}))
 	s.length += uint16(binary.Size(utf16.Encode([]rune(s.key))))
 	s.length += paddingLength(s.length)
-	s.length += s.valueLength
+	s.length += l
+	s.length += paddingLength(s.length)
 }
 
 func (s *_string) writeTo(w io.Writer) (int64, error) {
@@ -408,13 +434,19 @@ func (s *_string) writeTo(w io.Writer) (int64, error) {
 	}
 	written += n
 
-	n, err = common.BinaryWriteTo(w, make([]byte, paddingLength(uint16(written))))
+	n, err = common.WritePaddingTo(w, int(paddingLength(uint16(written))))
 	if err != nil {
 		return written, err
 	}
 	written += n
 
-	n, err = common.BinaryWriteTo(w, utf16.Encode([]rune(s.value)))
+	n, err = common.BinaryWriteTo(w, utf16.Encode([]rune(s.value+"\x00")))
+	if err != nil {
+		return written, err
+	}
+	written += n
+
+	n, err = common.WritePaddingTo(w, int(paddingLength(uint16(written))))
 	if err != nil {
 		return written, err
 	}
@@ -437,7 +469,7 @@ type rawVarFileInfo struct {
 	ValueLength uint16
 	Type        uint16
 	Key         [11]uint16
-	// Padding     [0]uint16
+	Padding     [2]uint16
 	// Children rawVar
 }
 
@@ -450,7 +482,7 @@ func (vfi *varFileInfo) writeTo(w io.Writer) (int64, error) {
 	written, err := common.BinaryWriteTo(w, rawVarFileInfo{
 		Length:      vfi.length,
 		ValueLength: 0,
-		Type:        0,
+		Type:        1,
 		Key:         [11]uint16{0x56, 0x61, 0x72, 0x46, 0x69, 0x6c, 0x65, 0x49, 0x6e, 0x66, 0x6f}, // L"VarFileInfo"
 	})
 	if err != nil {
@@ -475,14 +507,13 @@ type rawVar struct {
 	ValueLength uint16
 	Type        uint16
 	Key         [11]uint16
-	// Padding     [0]uint16
-	// Value []uint32
+	Padding     [2]uint16
+	// Value       []uint32
 }
 
 func (v *_var) freeze() {
 	v.valueLength = uint16(binary.Size(translation{}) * len(v.translations))
 	v.length = uint16(binary.Size(rawVar{}))
-	v.length += paddingLength(v.length)
 	v.length += v.valueLength
 }
 
@@ -523,6 +554,14 @@ type translation struct {
 	codepage uint16
 }
 
+// paddingLength returns how many bytes to pad when there are n bytes already
+// to fit the data on 32-bit boundary.
 func paddingLength(n uint16) uint16 {
-	return (4 - (n % 4)) % 4
+	// kinda weird calculation, but it works
+	p := uint16(1)
+	for (n+p)%4 != 0 {
+		p++
+	}
+	return p
+	// return (4 - (n % 4)) % 4 // this was my first attemp
 }
