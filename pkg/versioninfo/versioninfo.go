@@ -563,5 +563,5 @@ func paddingLength(n uint16) uint16 {
 		p++
 	}
 	return p
-	// return (4 - (n % 4)) % 4 // this was my first attemp
+	// return (4 - (n % 4)) % 4 // this was my first attempt
 }
