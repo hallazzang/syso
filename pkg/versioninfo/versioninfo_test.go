@@ -56,35 +56,33 @@ func TestFreeze(t *testing.T) {
 	vi := &VersionInfo{}
 	vi.SetString(0x0409, 0x04b0, "foo", "bar")
 	freeze(vi)
-	if vi.length != 166 {
-		t.Fatalf("wrong VersionInfo.length; expected 166, got %d", vi.length)
+	if vi.length != 180 {
+		t.Errorf("wrong VersionInfo.length; expected 180, got %d", vi.length)
 	}
-	if vi.stringFileInfo.length != 78 {
-		t.Fatalf("wrong VersionInfo.stringFileInfo.length; expected 78, got %d", vi.stringFileInfo.length)
+	if vi.stringFileInfo.length != 88 {
+		t.Errorf("wrong VersionInfo.stringFileInfo.length; expected 88, got %d", vi.stringFileInfo.length)
 	}
-	if vi.stringFileInfo.stringTables[0].length != 42 {
-		t.Fatalf("wrong VersionInfo.stringFileInfo.stringTables[0].length; expected 42, got %d", vi.stringFileInfo.stringTables[0].length)
+	if vi.stringFileInfo.stringTables[0].length != 52 {
+		t.Errorf("wrong VersionInfo.stringFileInfo.stringTables[0].length; expected 52, got %d", vi.stringFileInfo.stringTables[0].length)
 	}
-	if vi.stringFileInfo.stringTables[0].strings[0].length != 18 {
-		t.Fatalf("wrong VersionInfo.stringFileInfo.stringTables[0].strings[0].length; expected 18, got %d", vi.stringFileInfo.stringTables[0].strings[0].length)
+	if vi.stringFileInfo.stringTables[0].strings[0].length != 28 {
+		t.Errorf("wrong VersionInfo.stringFileInfo.stringTables[0].strings[0].length; expected 28, got %d", vi.stringFileInfo.stringTables[0].strings[0].length)
 	}
-	if vi.stringFileInfo.stringTables[0].strings[0].valueLength != 6 {
-		t.Fatalf("wrong VersionInfo.stringFileInfo.stringTables[0].strings[0].valueLength; expected 6, got %d", vi.stringFileInfo.stringTables[0].strings[0].valueLength)
+	if vi.stringFileInfo.stringTables[0].strings[0].valueLength != 4 {
+		t.Errorf("wrong VersionInfo.stringFileInfo.stringTables[0].strings[0].valueLength; expected 4, got %d", vi.stringFileInfo.stringTables[0].strings[0].valueLength)
 	}
 }
 
 func TestWrite(t *testing.T) {
 	vi := &VersionInfo{}
-	vi.AddTranslation(0x0409, 0x04b0)
 	vi.SetString(0x0409, 0x04b0, "foo", "bar")
-	vi.SetFileVersion(0x0001000200030004)
 
 	b := new(bytes.Buffer)
 	n, err := vi.WriteTo(b)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if n != int64(b.Len()) {
+	if n != int64(b.Len()) || n != int64(vi.length) {
 		t.Fatal("wrong length")
 	}
 }
