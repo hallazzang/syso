@@ -12,3 +12,12 @@ func BinaryWriteTo(w io.Writer, v interface{}) (int64, error) {
 	}
 	return int64(binary.Size(v)), nil
 }
+
+// WritePaddingTo writes n zero bytes to w.
+func WritePaddingTo(w io.Writer, n int) (int64, error) {
+	n, err := w.Write(make([]byte, n))
+	if err != nil {
+		return 0, err
+	}
+	return int64(n), nil
+}
