@@ -347,7 +347,7 @@ func (st *stringTable) freeze() {
 
 func (st *stringTable) writeTo(w io.Writer) (int64, error) {
 	var key [8]uint16
-	copy(key[:], utf16.Encode([]rune(fmt.Sprintf("%04x%04x", st.language, st.codepage))))
+	copy(key[:], utf16.Encode([]rune(fmt.Sprintf("%04X%04X", st.language, st.codepage))))
 	written, err := common.BinaryWriteTo(w, rawStringTable{
 		Length:      st.length,
 		ValueLength: 0,
