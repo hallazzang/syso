@@ -43,7 +43,7 @@ func TestString(t *testing.T) {
 
 func TestFreezeEmpty(t *testing.T) {
 	vi := &VersionInfo{}
-	vi.freeze()
+	freeze(vi)
 	if vi.length != 92 {
 		t.Errorf("wrong VersionInfo.length; expected 88, got %d", vi.length)
 	}
