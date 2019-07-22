@@ -85,11 +85,11 @@ Here's all possible configurations:
     }
   ],
   "manifest": {
-    "id": 2, // or "name": "..."
+    "id": 1,
     "path": "App.exe.manifest"
   },
   "versioninfo": {
-    "id": 3, // or "name": "..."
+    "id": 1,
     "fixed": {
       "fileVersion": "1.2.3.4",
       "productVersion": "5.6.7.8"
