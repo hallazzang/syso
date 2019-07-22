@@ -49,6 +49,10 @@ func main() {
 		}
 	}
 
+	if err := syso.EmbedVersionInfo(c, cfg.VersionInfo); err != nil {
+		printErrorAndExit("failed to embed version info: %v\n", err)
+	}
+
 	fout, err := os.Create(outFile)
 	if err != nil {
 		panic(err)

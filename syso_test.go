@@ -49,7 +49,7 @@ func TestBasic(t *testing.T) {
 	}
 
 	r := rsrc.New()
-	if err := r.AddIconsByID(1, g); err != nil {
+	if err := r.AddResourceByID(rsrc.IconResource, 1, g); err != nil {
 		t.Fatal(err)
 	}
 
@@ -66,5 +66,26 @@ func TestBasic(t *testing.T) {
 
 	if _, err := c.WriteTo(of); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestStringFileInfoResourceFields(t *testing.T) {
+	strPtr := func(s string) *string {
+		return &s
+	}
+
+	res := &StringFileInfoResource{}
+	res.Comments = strPtr("Foo")
+	res.CompanyName = strPtr("Bar")
+
+	fs := res.fields()
+	if len(fs) != 2 {
+		t.Fatalf("wrong field number; expected 2, got %d", len(fs))
+	}
+	if v := fs["Comments"]; v != "Foo" {
+		t.Errorf("wrong field value for Comments; expected Foo, got %s", v)
+	}
+	if v := fs["CompanyName"]; v != "Bar" {
+		t.Errorf("wrong field value for CompanyName; expected Bar, got %s", v)
 	}
 }
