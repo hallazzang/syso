@@ -58,7 +58,7 @@ type StringFileInfoResource struct {
 	InternalName     *string
 	LegalCopyright   *string
 	LegalTradeMarks  *string
-	OriginalFileName *string
+	OriginalFilename *string
 	PrivateBuild     *string
 	ProductName      *string
 	ProductVersion   *string
