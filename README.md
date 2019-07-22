@@ -68,6 +68,40 @@ $ syso
 This will generate `out.syso` in your current directory.
 You can now `go build` to actually include the resources in your executable.
 
+### Configuration
+
+Here's all possible configurations:
+
+```json
+{
+  "icons": [
+    {
+      "id": 1,
+      "path": "icon.ico"
+    },
+    {
+      "name": "Icon",
+      "path": "icon2.ico"
+    }
+  ],
+  "manifest": {
+    "id": 2, // or "name": "..."
+    "path": "App.exe.manifest"
+  },
+  "versioninfo": {
+    "id": 3, // or "name": "..."
+    "fixed": {
+      "fileVersion": "1.2.3.4",
+      "productVersion": "5.6.7.8"
+    },
+    "strings": {
+      "comments": "Comments",
+      "companyName": "My Company"
+    }
+  }
+}
+```
+
 ## License
 
 MIT
