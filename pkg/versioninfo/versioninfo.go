@@ -46,6 +46,7 @@ type VersionInfo struct {
 	valueLength    uint16
 	fixedFileInfo  fixedFileInfo // TODO: make fixedFileInfo optional
 	stringFileInfo *stringFileInfo
+	padding        uint16
 	varFileInfo    *varFileInfo
 }
 
@@ -53,11 +54,21 @@ type rawVersionInfo struct {
 	Length      uint16
 	ValueLength uint16
 	Type        uint16
-	Key         [15]uint16
-	Padding     [2]uint16
+	Key         [16]uint16
+	Padding     [2]byte
 	Value       rawFixedFileInfo
 	// Padding2    []uint16
 	// Children    []interface{}
+}
+
+func New() *VersionInfo {
+	return &VersionInfo{
+		fixedFileInfo: fixedFileInfo{
+			// fileFlagsMask: 0x0000003f,
+			fileOS:   0x00040004,
+			fileType: 0x00000001,
+		},
+	}
 }
 
 // WriteTo writes content of VersionInfo to w in binary format.
@@ -73,6 +84,8 @@ func (vi *VersionInfo) freeze() {
 	if vi.stringFileInfo != nil {
 		vi.length += vi.stringFileInfo.length
 	}
+	vi.padding = paddingLength(vi.length)
+	vi.length += vi.padding
 	if vi.varFileInfo != nil {
 		vi.length += vi.varFileInfo.length
 	}
@@ -83,7 +96,7 @@ func (vi *VersionInfo) writeTo(w io.Writer) (int64, error) {
 		Length:      vi.length,
 		ValueLength: vi.valueLength,
 		Type:        0,
-		Key:         [15]uint16{0x56, 0x53, 0x5f, 0x56, 0x45, 0x52, 0x53, 0x49, 0x4f, 0x4e, 0x5f, 0x49, 0x4e, 0x46, 0x4f}, // L"VS_VERSION_INFO"
+		Key:         [16]uint16{0x56, 0x53, 0x5f, 0x56, 0x45, 0x52, 0x53, 0x49, 0x4f, 0x4e, 0x5f, 0x49, 0x4e, 0x46, 0x4f, 0x00}, // L"VS_VERSION_INFO"
 		Value: rawFixedFileInfo{
 			Signature:        0xFEEF04BD,
 			StrucVersion:     0x00010000, // TODO: needed?
@@ -115,6 +128,7 @@ func (vi *VersionInfo) freezeWriterToChildren() []freezeWriterTo {
 	if vi.stringFileInfo != nil {
 		r = append(r, vi.stringFileInfo)
 	}
+	r = append(r, &paddingWriter{n: vi.padding})
 	if vi.varFileInfo != nil {
 		r = append(r, vi.varFileInfo)
 	}
@@ -313,8 +327,8 @@ type rawStringFileInfo struct {
 	Length      uint16
 	ValueLength uint16
 	Type        uint16
-	Key         [14]uint16
-	Padding     [1]uint16
+	Key         [15]uint16
+	// Padding     [0]byte
 	// Children    []rawStringTable
 }
 
@@ -330,7 +344,7 @@ func (sfi *stringFileInfo) writeTo(w io.Writer) (int64, error) {
 		Length:      sfi.length,
 		ValueLength: 0,
 		Type:        1,
-		Key:         [14]uint16{0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x46, 0x69, 0x6c, 0x65, 0x49, 0x6e, 0x66, 0x6f}, // L"StringFileInfo"
+		Key:         [15]uint16{0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x46, 0x69, 0x6c, 0x65, 0x49, 0x6e, 0x66, 0x6f, 0x00}, // L"StringFileInfo"
 	})
 	if err != nil {
 		return 0, err
@@ -357,20 +371,20 @@ type rawStringTable struct {
 	Length      uint16
 	ValueLength uint16
 	Type        uint16
-	Key         [8]uint16
-	Padding     [1]uint16
+	Key         [9]uint16
+	// Padding     [0]byte
 	// Children    []rawString
 }
 
 func (st *stringTable) freeze() {
 	st.length = uint16(binary.Size(rawStringTable{}))
 	for _, s := range st.strings {
-		st.length += s.length
+		st.length += s.length + paddingLength(s.length)
 	}
 }
 
 func (st *stringTable) writeTo(w io.Writer) (int64, error) {
-	var key [8]uint16
+	var key [9]uint16
 	copy(key[:], utf16.Encode([]rune(fmt.Sprintf("%04X%04X", st.language, st.codepage))))
 	written, err := common.BinaryWriteTo(w, rawStringTable{
 		Length:      st.length,
@@ -409,13 +423,14 @@ type rawString struct {
 }
 
 func (s *_string) freeze() {
-	l := uint16(binary.Size(utf16.Encode([]rune(s.value + "\x00"))))
-	s.valueLength = l / 2
+	keyLen := uint16(binary.Size(utf16.Encode([]rune(s.key + "\x00"))))
+	valueLen := uint16(binary.Size(utf16.Encode([]rune(s.value + "\x00"))))
+	s.valueLength = valueLen / 2
 	s.length = uint16(binary.Size(rawString{}))
-	s.length += uint16(binary.Size(utf16.Encode([]rune(s.key))))
+	s.length += keyLen
 	s.length += paddingLength(s.length)
-	s.length += l
-	s.length += paddingLength(s.length)
+	s.length += valueLen
+	// s.length += paddingLength(s.length)
 }
 
 func (s *_string) writeTo(w io.Writer) (int64, error) {
@@ -428,7 +443,7 @@ func (s *_string) writeTo(w io.Writer) (int64, error) {
 		return 0, err
 	}
 
-	n, err := common.BinaryWriteTo(w, utf16.Encode([]rune(s.key)))
+	n, err := common.BinaryWriteTo(w, utf16.Encode([]rune(s.key+"\x00")))
 	if err != nil {
 		return written, err
 	}
@@ -468,8 +483,8 @@ type rawVarFileInfo struct {
 	Length      uint16
 	ValueLength uint16
 	Type        uint16
-	Key         [11]uint16
-	Padding     [2]uint16
+	Key         [12]uint16
+	Padding     [2]byte
 	// Children rawVar
 }
 
@@ -483,7 +498,7 @@ func (vfi *varFileInfo) writeTo(w io.Writer) (int64, error) {
 		Length:      vfi.length,
 		ValueLength: 0,
 		Type:        1,
-		Key:         [11]uint16{0x56, 0x61, 0x72, 0x46, 0x69, 0x6c, 0x65, 0x49, 0x6e, 0x66, 0x6f}, // L"VarFileInfo"
+		Key:         [12]uint16{0x56, 0x61, 0x72, 0x46, 0x69, 0x6c, 0x65, 0x49, 0x6e, 0x66, 0x6f, 0x00}, // L"VarFileInfo"
 	})
 	if err != nil {
 		return 0, err
@@ -506,8 +521,8 @@ type rawVar struct {
 	Length      uint16
 	ValueLength uint16
 	Type        uint16
-	Key         [11]uint16
-	Padding     [2]uint16
+	Key         [12]uint16
+	Padding     [2]byte
 	// Value       []uint32
 }
 
@@ -522,7 +537,7 @@ func (v *_var) writeTo(w io.Writer) (int64, error) {
 		Length:      v.length,
 		ValueLength: v.valueLength,
 		Type:        0,
-		Key:         [11]uint16{0x54, 0x72, 0x61, 0x6e, 0x73, 0x6c, 0x61, 0x74, 0x69, 0x6f, 0x6e}, // L"Translation"
+		Key:         [12]uint16{0x54, 0x72, 0x61, 0x6e, 0x73, 0x6c, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x00}, // L"Translation"
 	})
 	if err != nil {
 		return 0, err
@@ -558,10 +573,26 @@ type translation struct {
 // to fit the data on 32-bit boundary.
 func paddingLength(n uint16) uint16 {
 	// kinda weird calculation, but it works
-	p := uint16(1)
-	for (n+p)%4 != 0 {
-		p++
-	}
-	return p
-	// return (4 - (n % 4)) % 4 // this was my first attempt
+	// p := uint16(1)
+	// for (n+p)%4 != 0 {
+	// 	p++
+	// }
+	// return p
+	return (4 - (n % 4)) % 4 // this was my first attempt
+}
+
+type paddingWriter struct {
+	n uint16
+}
+
+func (pw *paddingWriter) freeze() {
+
+}
+
+func (pw *paddingWriter) writeTo(w io.Writer) (int64, error) {
+	return common.WritePaddingTo(w, int(pw.n))
+}
+
+func (pw *paddingWriter) freezeWriterToChildren() []freezeWriterTo {
+	return nil
 }

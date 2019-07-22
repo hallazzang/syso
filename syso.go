@@ -184,7 +184,7 @@ func EmbedVersionInfo(c *coff.File, v *VersionInfoResource) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to get or create .rsrc section")
 	}
-	vi := &versioninfo.VersionInfo{}
+	vi := versioninfo.New()
 
 	if v.Fixed != nil {
 		if v.Fixed.FileVersion != nil {
