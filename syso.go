@@ -1,17 +1,14 @@
 package syso
 
 import (
-	"bytes"
 	"encoding/json"
 	"io"
 	"os"
-	"reflect"
 
 	"github.com/hallazzang/syso/pkg/coff"
 	"github.com/hallazzang/syso/pkg/common"
 	"github.com/hallazzang/syso/pkg/ico"
 	"github.com/hallazzang/syso/pkg/rsrc"
-	"github.com/hallazzang/syso/pkg/versioninfo"
 	"github.com/pkg/errors"
 )
 
@@ -36,62 +33,11 @@ func (r *FileResource) Validate() error {
 	return nil
 }
 
-// VersionInfoResource represents a version info resource.
-type VersionInfoResource struct {
-	ID      *int
-	Name    *string
-	Fixed   *FixedFileInfoResource
-	Strings *StringFileInfoResource
-	// Vars     *VarFileInfoResource // TODO: support it
-}
-
-// FixedFileInfoResource holds fixed information that is language and codepage
-// independent, like file or product version.
-type FixedFileInfoResource struct {
-	FileVersion    *string
-	ProductVersion *string
-	// TODO: add other fields
-}
-
-// StringFileInfoResource holds string table which describes the file
-// information.
-type StringFileInfoResource struct {
-	Comments         *string
-	CompanyName      *string
-	FileDescription  *string
-	FileVersion      *string
-	InternalName     *string
-	LegalCopyright   *string
-	LegalTradeMarks  *string
-	OriginalFilename *string
-	PrivateBuild     *string
-	ProductName      *string
-	ProductVersion   *string
-	SpecialBuild     *string
-}
-
-func (res *StringFileInfoResource) fields() [][2]string {
-	var result [][2]string
-	target := reflect.ValueOf(res).Elem()
-	for i := 0; i < target.NumField(); i++ {
-		field := target.Type().Field(i)
-		value := target.Field(i)
-		if !value.IsNil() {
-			result = append(result, [2]string{field.Name, value.Elem().String()})
-		}
-	}
-	return result
-}
-
-// VarFileInfoResource represents organization of data.
-type VarFileInfoResource struct {
-}
-
 // Config is a syso config data.
 type Config struct {
-	Icons       []*FileResource
-	Manifest    *FileResource
-	VersionInfo *VersionInfoResource
+	Icons        []*FileResource
+	Manifest     *FileResource
+	VersionInfos []*VersionInfoResource
 }
 
 // ParseConfig reads JSON-formatted syso config from r and returns Config object.
@@ -182,57 +128,6 @@ func EmbedManifest(c *coff.File, manifest *FileResource) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to add manifest resource")
 	}
-	return nil
-}
-
-// EmbedVersionInfo embeds a version info resource.
-func EmbedVersionInfo(c *coff.File, v *VersionInfoResource) error {
-	r, err := getOrCreateRSRCSection(c)
-	if err != nil {
-		return errors.Wrap(err, "failed to get or create .rsrc section")
-	}
-	vi := versioninfo.New()
-
-	if v.Fixed != nil {
-		if v.Fixed.FileVersion != nil {
-			if err := vi.SetFileVersionString(*v.Fixed.FileVersion); err != nil {
-				return errors.Wrap(err, "failed to set file version string")
-			}
-		}
-		if v.Fixed.ProductVersion != nil {
-			if err := vi.SetProductVersionString(*v.Fixed.ProductVersion); err != nil {
-				return errors.Wrap(err, "failed to set product version string")
-			}
-		}
-	}
-	if v.Strings != nil {
-		fs := v.Strings.fields()
-		for _, kv := range fs {
-			vi.SetString(0x0409, 0x04b0, kv[0], kv[1])
-		}
-	}
-	vi.AddTranslation(0x0409, 0x04b0)
-
-	// TODO: need more efficient way
-	buf := &bytes.Buffer{}
-	if _, err := vi.WriteTo(buf); err != nil {
-		return errors.Wrap(err, "failed to write version info data")
-	}
-
-	b, err := common.NewBlob(bytes.NewReader(buf.Bytes()))
-	if err != nil {
-		return errors.Wrap(err, "failed to create version info blob")
-	}
-
-	if v.ID != nil {
-		err = r.AddResourceByID(rsrc.VersionInfoResource, *v.ID, b)
-	} else {
-		err = r.AddResourceByName(rsrc.VersionInfoResource, *v.Name, b)
-	}
-	if err != nil {
-		return errors.Wrap(err, "failed to add version info resource")
-	}
-
 	return nil
 }
 
