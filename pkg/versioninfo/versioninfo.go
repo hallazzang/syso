@@ -4,8 +4,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
-	"regexp"
-	"strconv"
 	"unicode/utf16"
 
 	"github.com/hallazzang/syso/pkg/common"
@@ -126,7 +124,7 @@ func (vi *VersionInfo) FileVersion() uint64 {
 // FileVersionString returns file version in string, formatted in
 // "Major.Minor.Patch.Build" form.
 func (vi *VersionInfo) FileVersionString() string {
-	return formatVersionString(vi.fixedFileInfo.fileVersion)
+	return common.FormatVersionString(vi.fixedFileInfo.fileVersion)
 }
 
 // SetFileVersion sets file version in integer.
@@ -137,7 +135,7 @@ func (vi *VersionInfo) SetFileVersion(v uint64) {
 // SetFileVersionString sets file version in string, returns error
 // if s is not in a form of "Major.Minor.Patch.Build".
 func (vi *VersionInfo) SetFileVersionString(s string) error {
-	v, err := parseVersionString(s)
+	v, err := common.ParseVersionString(s)
 	if err != nil {
 		return errors.Wrap(err, "failed to parse version string")
 	}
@@ -153,7 +151,7 @@ func (vi *VersionInfo) ProductVersion() uint64 {
 // ProductVersionString returns product version in string, formatted in
 // "Major.Minor.Patch.Build" form.
 func (vi *VersionInfo) ProductVersionString() string {
-	return formatVersionString(vi.fixedFileInfo.productVersion)
+	return common.FormatVersionString(vi.fixedFileInfo.productVersion)
 }
 
 // SetProductVersion sets product version in integer.
@@ -164,32 +162,12 @@ func (vi *VersionInfo) SetProductVersion(v uint64) {
 // SetProductVersionString sets product version in string, returns error
 // if s is not in a form "Major.Minor.Patch.Build".
 func (vi *VersionInfo) SetProductVersionString(s string) error {
-	v, err := parseVersionString(s)
+	v, err := common.ParseVersionString(s)
 	if err != nil {
 		return errors.Wrap(err, "failed to parse version string")
 	}
 	vi.fixedFileInfo.productVersion = v
 	return nil
-}
-
-func formatVersionString(v uint64) string {
-	return fmt.Sprintf("%d.%d.%d.%d", (v>>48)&0xffff, (v>>32)&0xffff, (v>>16)&0xffff, v&0xffff)
-}
-
-func parseVersionString(s string) (uint64, error) {
-	r := regexp.MustCompile(`^(\d+)\.(\d+)\.(\d+)\.(\d+)$`).FindStringSubmatch(s)
-	if len(r) == 0 {
-		return 0, errors.Errorf("invalid version string format; %q", s)
-	}
-	var v uint64
-	for _, c := range r[1:] {
-		n, err := strconv.ParseUint(c, 10, 16)
-		if err != nil {
-			return 0, errors.Wrapf(err, "failed to parse version component; %q", c)
-		}
-		v = (v << 16) | n
-	}
-	return v, nil
 }
 
 // String returns a string value from string table which is indicated
