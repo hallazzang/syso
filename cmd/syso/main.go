@@ -38,19 +38,23 @@ func main() {
 	}
 
 	c := coff.New()
+
 	for i, icon := range cfg.Icons {
 		if err := syso.EmbedIcon(c, icon); err != nil {
 			printErrorAndExit("failed to embed icon #%d: %v\n", i, err)
 		}
 	}
+
 	if cfg.Manifest != nil {
 		if err := syso.EmbedManifest(c, cfg.Manifest); err != nil {
 			printErrorAndExit("failed to embed manifest: %v\n", err)
 		}
 	}
 
-	if err := syso.EmbedVersionInfo(c, cfg.VersionInfo); err != nil {
-		printErrorAndExit("failed to embed version info: %v\n", err)
+	for i, vi := range cfg.VersionInfos {
+		if err := syso.EmbedVersionInfo(c, vi); err != nil {
+			printErrorAndExit("failed to embed version info #%d: %v\n", i, err)
+		}
 	}
 
 	fout, err := os.Create(outFile)
