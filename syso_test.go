@@ -68,24 +68,3 @@ func TestBasic(t *testing.T) {
 		t.Fatal(err)
 	}
 }
-
-func TestStringFileInfoResourceFields(t *testing.T) {
-	strPtr := func(s string) *string {
-		return &s
-	}
-
-	res := &StringFileInfoResource{}
-	res.Comments = strPtr("Foo")
-	res.CompanyName = strPtr("Bar")
-
-	fs := res.fields()
-	if len(fs) != 2 {
-		t.Fatalf("wrong field number; expected 2, got %d", len(fs))
-	}
-	if kv := fs[0]; kv[0] != "Comments" || kv[1] != "Foo" {
-		t.Errorf("wrong field key or value; expected Comments: Foo, got %v", kv)
-	}
-	if kv := fs[1]; kv[0] != "CompanyName" || kv[1] != "Bar" {
-		t.Errorf("wrong field key or value; expected CompanyName: Bar, got %v", kv)
-	}
-}
