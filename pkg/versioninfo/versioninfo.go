@@ -32,6 +32,7 @@ type rawVersionInfo struct {
 	// Children    []interface{}
 }
 
+// New returns new version info resource with some fields set to default.
 func New() *VersionInfo {
 	return &VersionInfo{
 		fixedFileInfo: fixedFileInfo{
