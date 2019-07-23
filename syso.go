@@ -65,14 +65,14 @@ type StringFileInfoResource struct {
 	SpecialBuild     *string
 }
 
-func (res *StringFileInfoResource) fields() map[string]string {
-	result := make(map[string]string)
+func (res *StringFileInfoResource) fields() [][2]string {
+	var result [][2]string
 	target := reflect.ValueOf(res).Elem()
 	for i := 0; i < target.NumField(); i++ {
 		field := target.Type().Field(i)
 		value := target.Field(i)
 		if !value.IsNil() {
-			result[field.Name] = value.Elem().String()
+			result = append(result, [2]string{field.Name, value.Elem().String()})
 		}
 	}
 	return result
@@ -200,8 +200,8 @@ func EmbedVersionInfo(c *coff.File, v *VersionInfoResource) error {
 	}
 	if v.Strings != nil {
 		fs := v.Strings.fields()
-		for k, v := range fs {
-			vi.SetString(0x0409, 0x04b0, k, v)
+		for _, kv := range fs {
+			vi.SetString(0x0409, 0x04b0, kv[0], kv[1])
 		}
 	}
 	vi.AddTranslation(0x0409, 0x04b0)
