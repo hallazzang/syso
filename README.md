@@ -102,6 +102,9 @@ Here's all possible configurations:
 }
 ```
 
+Note that keys are case-insensitive.
+You can use both `"companyName"` and `"CompanyName"`, or even `"companyname"` for key.
+
 ## License
 
 MIT
