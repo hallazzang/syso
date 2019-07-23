@@ -82,10 +82,10 @@ func TestStringFileInfoResourceFields(t *testing.T) {
 	if len(fs) != 2 {
 		t.Fatalf("wrong field number; expected 2, got %d", len(fs))
 	}
-	if v := fs["Comments"]; v != "Foo" {
-		t.Errorf("wrong field value for Comments; expected Foo, got %s", v)
+	if kv := fs[0]; kv[0] != "Comments" || kv[1] != "Foo" {
+		t.Errorf("wrong field key or value; expected Comments: Foo, got %v", kv)
 	}
-	if v := fs["CompanyName"]; v != "Bar" {
-		t.Errorf("wrong field value for CompanyName; expected Bar, got %s", v)
+	if kv := fs[1]; kv[0] != "CompanyName" || kv[1] != "Bar" {
+		t.Errorf("wrong field key or value; expected CompanyName: Bar, got %v", kv)
 	}
 }
