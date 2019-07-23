@@ -36,6 +36,7 @@ func (r *FileResource) Validate() error {
 	return nil
 }
 
+// VersionInfoResource represents a version info resource.
 type VersionInfoResource struct {
 	ID      *int
 	Name    *string
@@ -44,12 +45,16 @@ type VersionInfoResource struct {
 	// Vars     *VarFileInfoResource // TODO: support it
 }
 
+// FixedFileInfoResource holds fixed information that is language and codepage
+// independent, like file or product version.
 type FixedFileInfoResource struct {
 	FileVersion    *string
 	ProductVersion *string
 	// TODO: add other fields
 }
 
+// StringFileInfoResource holds string table which describes the file
+// information.
 type StringFileInfoResource struct {
 	Comments         *string
 	CompanyName      *string
@@ -78,6 +83,7 @@ func (res *StringFileInfoResource) fields() [][2]string {
 	return result
 }
 
+// VarFileInfoResource represents organization of data.
 type VarFileInfoResource struct {
 }
 
@@ -179,6 +185,7 @@ func EmbedManifest(c *coff.File, manifest *FileResource) error {
 	return nil
 }
 
+// EmbedVersionInfo embeds a version info resource.
 func EmbedVersionInfo(c *coff.File, v *VersionInfoResource) error {
 	r, err := getOrCreateRSRCSection(c)
 	if err != nil {
