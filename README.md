@@ -35,15 +35,15 @@ Here's an example:
 
 ```json
 {
-  "icons": [
+  "Icons": [
     {
-      "id": 1,
-      "path": "icon.ico"
+      "ID": 1,
+      "Path": "icon.ico"
     }
   ],
-  "manifest": {
-    "id": 2,
-    "path": "App.exe.manifest"
+  "Manifest": {
+    "ID": 2,
+    "Path": "App.exe.manifest"
   }
 }
 ```
@@ -53,8 +53,8 @@ You can specify `name` instead of `id`:
 ```json
 ...
     {
-      "name": "MyIcon",
-      "path": "icon.ico"
+      "Name": "MyIcon",
+      "Path": "icon.ico"
     }
 ...
 ```
@@ -74,31 +74,51 @@ Here's all possible configurations:
 
 ```json
 {
-  "icons": [
+  "Icons": [
     {
-      "id": 1,
-      "path": "icon.ico"
+      "ID": 1,
+      "Path": "icon.ico"
     },
     {
-      "name": "Icon",
-      "path": "icon2.ico"
+      "Name": "Icon",
+      "Path": "icon2.ico"
     }
   ],
-  "manifest": {
-    "id": 1,
-    "path": "App.exe.manifest"
+  "Manifest": {
+    "ID": 1,
+    "Path": "App.exe.manifest"
   },
-  "versioninfo": {
-    "id": 1,
-    "fixed": {
-      "fileVersion": "1.2.3.4",
-      "productVersion": "5.6.7.8"
-    },
-    "strings": {
-      "comments": "Comments",
-      "companyName": "My Company"
+  "VersionInfos": [
+    {
+      "ID": 1,
+      "Fixed": {
+        "FileVersion": "10.0.14393.0",
+        "ProductVersion": "10.0.14393.0"
+      },
+      "StringTables": [
+        {
+          "Language": "0409",
+          "Charset": "04b0",
+          "Strings": {
+            "CompanyName": "Microsoft Corporation",
+            "FileDescription": "Windows Command Processor",
+            "FileVersion": "10.0.14393.0 (rs1_release.160715-1616)",
+            "InternalName": "cmd",
+            "LegalCopyright": "\u00a9 Microsoft Corporation. All rights reserved.",
+            "OriginalFilename": "Cmd.Exe",
+            "ProductName": "Microsoft\u00ae Windows\u00ae Operating System",
+            "ProductVersion": "10.0.14393.0"
+          }
+        }
+      ],
+      "Translations": [
+        {
+          "Language": "0409",
+          "Charset": "04b0"
+        }
+      ]
     }
-  }
+  ]
 }
 ```
 
