@@ -3,7 +3,7 @@
 [![godoc]](https://godoc.org/github.com/hallazzang/syso)
 [![goreportcard]](https://goreportcard.com/report/github.com/hallazzang/syso)
 
-**syso** - tool for embedding various resources in go executable
+**syso** - tool for embedding various type of resources in go Windows executable
 
 Table of contents:
 
@@ -14,13 +14,19 @@ Table of contents:
 
 ## Features
 
-| Feature                      | [rsrc] | [goversioninfo] | syso(this project) |
-| :--------------------------- | :----: | :-------------: | :----------------: |
-| Embedding icons              |   ✔    |        ✔        |         ✔          |
-| Embedding manifest           |   ✔    |        ✔        |         ✔          |
-| Configuration through a file |        |        ✔        |         ✔          |
-| Embedding version info       |        |        ✔        |         ✔          |
-| Fixed resource identifier    |        |                 |         ✔          |
+| Feature                             | [rsrc] | [goversioninfo] | syso(this project) |
+| :---------------------------------- | :----: | :-------------: | :----------------: |
+| Embedding icons                     |   ✔    |        ✔        |         ✔          |
+| Embedding manifest                  |   ✔    |        ✔        |         ✔          |
+| Configuration through a file        |        |        ✔        |         ✔          |
+| Embedding version info              |        |        ✔        |         ✔          |
+| Embedding multilingual version info |        |                 |         ✔          |
+| Fixed resource identifier           |        |                 |         ✔          |
+
+### Why _fixed_ resource identifier matters?
+
+Because you can easily load your resource in runtime.
+Other tools do not guarantee your resource to have same id across builds.
 
 ## Installation
 
@@ -35,15 +41,15 @@ Here's an example:
 
 ```json
 {
-  "icons": [
+  "Icons": [
     {
-      "id": 1,
-      "path": "icon.ico"
+      "ID": 1,
+      "Path": "icon.ico"
     }
   ],
-  "manifest": {
-    "id": 2,
-    "path": "App.exe.manifest"
+  "Manifest": {
+    "ID": 2,
+    "Path": "App.exe.manifest"
   }
 }
 ```
@@ -53,8 +59,8 @@ You can specify `name` instead of `id`:
 ```json
 ...
     {
-      "name": "MyIcon",
-      "path": "icon.ico"
+      "Name": "MyIcon",
+      "Path": "icon.ico"
     }
 ...
 ```
@@ -74,31 +80,51 @@ Here's all possible configurations:
 
 ```json
 {
-  "icons": [
+  "Icons": [
     {
-      "id": 1,
-      "path": "icon.ico"
+      "ID": 1,
+      "Path": "icon.ico"
     },
     {
-      "name": "Icon",
-      "path": "icon2.ico"
+      "Name": "Icon",
+      "Path": "icon2.ico"
     }
   ],
-  "manifest": {
-    "id": 1,
-    "path": "App.exe.manifest"
+  "Manifest": {
+    "ID": 1,
+    "Path": "App.exe.manifest"
   },
-  "versioninfo": {
-    "id": 1,
-    "fixed": {
-      "fileVersion": "1.2.3.4",
-      "productVersion": "5.6.7.8"
-    },
-    "strings": {
-      "comments": "Comments",
-      "companyName": "My Company"
+  "VersionInfos": [
+    {
+      "ID": 1,
+      "Fixed": {
+        "FileVersion": "10.0.14393.0",
+        "ProductVersion": "10.0.14393.0"
+      },
+      "StringTables": [
+        {
+          "Language": "0409",
+          "Charset": "04b0",
+          "Strings": {
+            "CompanyName": "Microsoft Corporation",
+            "FileDescription": "Windows Command Processor",
+            "FileVersion": "10.0.14393.0 (rs1_release.160715-1616)",
+            "InternalName": "cmd",
+            "LegalCopyright": "\u00a9 Microsoft Corporation. All rights reserved.",
+            "OriginalFilename": "Cmd.Exe",
+            "ProductName": "Microsoft\u00ae Windows\u00ae Operating System",
+            "ProductVersion": "10.0.14393.0"
+          }
+        }
+      ],
+      "Translations": [
+        {
+          "Language": "0409",
+          "Charset": "04b0"
+        }
+      ]
     }
-  }
+  ]
 }
 ```
 
