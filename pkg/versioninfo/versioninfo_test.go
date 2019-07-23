@@ -43,7 +43,7 @@ func TestString(t *testing.T) {
 
 func TestFreezeEmpty(t *testing.T) {
 	vi := &VersionInfo{}
-	freeze(vi)
+	vi.freeze()
 	if vi.length != 92 {
 		t.Errorf("wrong VersionInfo.length; expected 88, got %d", vi.length)
 	}
@@ -55,18 +55,18 @@ func TestFreezeEmpty(t *testing.T) {
 func TestFreeze(t *testing.T) {
 	vi := &VersionInfo{}
 	vi.SetString(0x0409, 0x04b0, "foo", "bar")
-	freeze(vi)
-	if vi.length != 180 {
-		t.Errorf("wrong VersionInfo.length; expected 180, got %d", vi.length)
+	vi.freeze()
+	if vi.length != 176 {
+		t.Errorf("wrong VersionInfo.length; expected 176, got %d", vi.length)
 	}
-	if vi.stringFileInfo.length != 88 {
-		t.Errorf("wrong VersionInfo.stringFileInfo.length; expected 88, got %d", vi.stringFileInfo.length)
+	if vi.stringFileInfo.length != 84 {
+		t.Errorf("wrong VersionInfo.stringFileInfo.length; expected 84, got %d", vi.stringFileInfo.length)
 	}
-	if vi.stringFileInfo.stringTables[0].length != 52 {
-		t.Errorf("wrong VersionInfo.stringFileInfo.stringTables[0].length; expected 52, got %d", vi.stringFileInfo.stringTables[0].length)
+	if vi.stringFileInfo.stringTables[0].length != 48 {
+		t.Errorf("wrong VersionInfo.stringFileInfo.stringTables[0].length; expected 48, got %d", vi.stringFileInfo.stringTables[0].length)
 	}
-	if vi.stringFileInfo.stringTables[0].strings[0].length != 28 {
-		t.Errorf("wrong VersionInfo.stringFileInfo.stringTables[0].strings[0].length; expected 28, got %d", vi.stringFileInfo.stringTables[0].strings[0].length)
+	if vi.stringFileInfo.stringTables[0].strings[0].length != 24 {
+		t.Errorf("wrong VersionInfo.stringFileInfo.stringTables[0].strings[0].length; expected 24, got %d", vi.stringFileInfo.stringTables[0].strings[0].length)
 	}
 	if vi.stringFileInfo.stringTables[0].strings[0].valueLength != 4 {
 		t.Errorf("wrong VersionInfo.stringFileInfo.stringTables[0].strings[0].valueLength; expected 4, got %d", vi.stringFileInfo.stringTables[0].strings[0].valueLength)
