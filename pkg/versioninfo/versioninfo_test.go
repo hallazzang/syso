@@ -5,29 +5,6 @@ import (
 	"testing"
 )
 
-func TestFormatVersionString(t *testing.T) {
-	vi := &VersionInfo{}
-	if err := vi.SetFileVersionString("1.2.3.4"); err != nil {
-		t.Fatal(err)
-	}
-	if vi.FileVersionString() != "1.2.3.4" {
-		t.Errorf("failed")
-	}
-}
-
-func TestString(t *testing.T) {
-	vi := &VersionInfo{}
-	vi.SetString(0x0409, 0x04b0, "foo", "bar")
-	if s, ok := vi.String(0x0409, 0x04b0, "foo"); !ok {
-		t.Fatal("cannot get string")
-	} else if s != "bar" {
-		t.Fatal("wrong string")
-	}
-	if _, ok := vi.String(0x1, 0x2, "foo"); ok {
-		t.Fatal("must not get string")
-	}
-}
-
 func TestFreezeEmpty(t *testing.T) {
 	vi := &VersionInfo{}
 	vi.freeze()
