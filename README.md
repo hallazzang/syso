@@ -1,5 +1,7 @@
 # syso
 
+[![Build Status](https://travis-ci.org/hallazzang/syso.svg?branch=master)](https://travis-ci.org/hallazzang/syso)
+[![codecov](https://codecov.io/gh/hallazzang/syso/branch/master/graph/badge.svg)](https://codecov.io/gh/hallazzang/syso)
 [![godoc]](https://godoc.org/github.com/hallazzang/syso)
 [![goreportcard]](https://goreportcard.com/report/github.com/hallazzang/syso)
 
