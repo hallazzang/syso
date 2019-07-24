@@ -95,6 +95,9 @@ func (st *VersionInfoStringTable) Validate() error {
 	if _, err := st.charsetID(); err != nil {
 		return errors.Wrap(err, "failed to parse charset identifier")
 	}
+	if st.Strings == nil {
+		return errors.New("strings should present")
+	}
 
 	return nil
 }
