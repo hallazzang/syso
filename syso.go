@@ -29,6 +29,8 @@ func (r *FileResource) Validate() error {
 		return errors.New("id and name cannot be set together")
 	} else if r.ID < 0 {
 		return errors.Errorf("invalid id: %d", r.ID)
+	} else if r.Path == "" {
+		return errors.New("path should be set")
 	}
 	return nil
 }
