@@ -74,9 +74,80 @@ $ syso
 This will generate `out.syso` in your current directory.
 You can now `go build` to actually include the resources in your executable.
 
-### Configuration
+## Configuration
 
-Here's all possible configurations:
+Configuration file is written in JSON format.
+Top-level configuration is an object that has three optional fields:
+`Icon`, `Manifest`, `VersionInfos`.
+
+Here are details about configuration object types.
+
+### Icon
+
+| Field | Type     | Description    |
+| ----- | -------- | -------------- |
+| ID    | `Number` |                |
+| Name  | `String` |                |
+| Path  | `String` | Icon file path |
+
+### Manifest
+
+| Field | Type     | Description        |
+| ----- | -------- | ------------------ |
+| ID    | `Number` |                    |
+| Name  | `String` |                    |
+| Path  | `String` | Manifest file path |
+
+### VersionInfo
+
+| Field        | Type                       | Description                                           |
+| ------------ | -------------------------- | ----------------------------------------------------- |
+| ID           | `Number`                   |                                                       |
+| Name         | `String`                   |                                                       |
+| Fixed        | `VersionInfoFixed`         | Language-independent information                      |
+| StringTables | `[]VersionInfoStringTable` | Language-specific string information                  |
+| Translations | `[]VersionInfoTranslation` | Language and charset pairs which application supports |
+
+##### VersionInfoFixed
+
+| Field          | Type     | Description                         |
+| -------------- | -------- | ----------------------------------- |
+| FileVersion    | `String` | Format: `"Major.Minor.Patch.Build"` |
+| ProductVersion | `String` | Format: `"Major.Minor.Patch.Build"` |
+
+#### VersionInfoStringTable
+
+| Field    | Type                 | Description                        |
+| -------- | -------------------- | ---------------------------------- |
+| Language | `String`             | (Required) String table's language |
+| Charset  | `String`             | (Required) String table's charset  |
+| Strings  | `VersionInfoStrings` | (Required) Actual string table     |
+
+#### VersionInfoStrings
+
+| Field            | Type     | Description |
+| ---------------- | -------- | ----------- |
+| Comments         | `String` |             |
+| CompanyName      | `String` |             |
+| FileDescription  | `String` |             |
+| FileVersion      | `String` |             |
+| InternalName     | `String` |             |
+| LegalCopyright   | `String` |             |
+| LegalTradeMarks  | `String` |             |
+| OriginalFilename | `String` |             |
+| PrivateBuild     | `String` |             |
+| ProductName      | `String` |             |
+| ProductVersion   | `String` |             |
+| SpecialBuild     | `String` |             |
+
+#### VersionInfoTranslation
+
+| Field    | Type     | Description                   |
+| -------- | -------- | ----------------------------- |
+| Language | `String` | (Required) Supported language |
+| Charset  | `String` | (Required) Supported charset  |
+
+Here's an example configuration:
 
 ```json
 {
