@@ -10,7 +10,7 @@ import (
 
 type badWriter struct{}
 
-func (w *badWriter) Write([]byte) (int, error) {
+func (*badWriter) Write([]byte) (int, error) {
 	return 0, errors.New("you cannot write to bad writer")
 }
 
