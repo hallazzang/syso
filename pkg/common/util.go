@@ -20,6 +20,11 @@ func BinaryWriteTo(w io.Writer, v interface{}) (int64, error) {
 
 // WritePaddingTo writes n zero bytes to w.
 func WritePaddingTo(w io.Writer, n int) (int64, error) {
+	if n < 0 {
+		return 0, errors.New("n cannot be negative number")
+	} else if n == 0 {
+		return 0, nil
+	}
 	n, err := w.Write(make([]byte, n))
 	if err != nil {
 		return 0, err
