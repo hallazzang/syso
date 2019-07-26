@@ -82,7 +82,7 @@ func DecodeAll(r Reader) (*Group, error) {
 	if err := binary.Read(r, binary.LittleEndian, &d); err != nil {
 		return nil, errors.Wrap(err, "failed to read icon directory")
 	}
-	if d.Reserved != 0 || d.Type != 1 {
+	if d.Reserved != 0 || d.Type != 1 || d.Count == 0 {
 		return nil, errors.New("bad ICO file")
 	}
 
