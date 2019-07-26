@@ -119,11 +119,11 @@ Here are details about configuration object types.
 
 #### VersionInfoStringTable
 
-| Field    | Type                 | Description                        |
-| -------- | -------------------- | ---------------------------------- |
-| Language | `String`             | (Required) String table's language |
-| Charset  | `String`             | (Required) String table's charset  |
-| Strings  | `VersionInfoStrings` | (Required) Actual string table     |
+| Field    | Type                 | Description                                 |
+| -------- | -------------------- | ------------------------------------------- |
+| Language | `String`             | (Required) String table's language, in hex  |
+| Charset  | `String`             | (Required) String table's charset, in hex   |
+| Strings  | `VersionInfoStrings` | (Required) Actual string table              |
 
 #### VersionInfoStrings
 
@@ -144,10 +144,10 @@ Here are details about configuration object types.
 
 #### VersionInfoTranslation
 
-| Field    | Type     | Description                   |
-| -------- | -------- | ----------------------------- |
-| Language | `String` | (Required) Supported language |
-| Charset  | `String` | (Required) Supported charset  |
+| Field    | Type     | Description                           |
+| -------- | -------- | ------------------------------------- |
+| Language | `String` | (Required) Supported language, in hex |
+| Charset  | `String` | (Required) Supported charset, in hex  |
 
 Here's an example configuration:
 
