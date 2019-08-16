@@ -548,11 +548,5 @@ type translation struct {
 // paddingLength returns how many bytes to pad when there are n bytes already
 // to fit the data on 32-bit boundary.
 func paddingLength(n uint16) uint16 {
-	// kinda weird calculation, but it works
-	// p := uint16(1)
-	// for (n+p)%4 != 0 {
-	// 	p++
-	// }
-	// return p
-	return (4 - (n % 4)) % 4 // this was my first attempt
+	return (4 - (n % 4)) % 4
 }
